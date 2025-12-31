@@ -67,7 +67,7 @@ export default function LoginScreen() {
 
       <Text style={styles.title}>Admin Login</Text>
       <Text style={styles.subtitle}>
-        Sign in to access the Kraftkonect admin dashboard
+        Sign in to access the KraftKonect admin dashboard
       </Text>
 
       <View style={styles.form}>

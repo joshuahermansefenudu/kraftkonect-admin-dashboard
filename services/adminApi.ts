@@ -24,7 +24,7 @@ interface GraphQLResponse<T> {
   errors?: { message: string }[];
 }
 
-const makeGraphQLRequest = async <T,>(
+const makeGraphQLRequest = async <T>(
   query: string,
   variables?: Record<string, any>
 ): Promise<T> => {
@@ -80,7 +80,11 @@ export const adminUsersQuery = async (params: {
       status: params.status,
     });
 
-    const paginated = paginateData(filtered, params.page || 1, params.pageSize || 20);
+    const paginated = paginateData(
+      filtered,
+      params.page || 1,
+      params.pageSize || 20
+    );
 
     return {
       users: paginated.data,
@@ -134,7 +138,11 @@ export const adminProvidersQuery = async (params: {
       status: params.status,
     });
 
-    const paginated = paginateData(filtered, params.page || 1, params.pageSize || 20);
+    const paginated = paginateData(
+      filtered,
+      params.page || 1,
+      params.pageSize || 20
+    );
 
     return {
       providers: paginated.data,
@@ -313,7 +321,11 @@ export const adminApproveProvider = async (
       throw new Error("Provider not found");
     }
 
-    const updatedProvider = { ...provider, status: "approved" as ProviderStatus, approvedAt: new Date().toISOString() };
+    const updatedProvider = {
+      ...provider,
+      status: "approved" as ProviderStatus,
+      approvedAt: new Date().toISOString(),
+    };
     const index = mockProvidersList.findIndex((p) => p.id === providerId);
     if (index !== -1) {
       mockProvidersList[index] = updatedProvider;
@@ -346,7 +358,9 @@ export const adminRejectProvider = async (
   reason?: string
 ): Promise<Provider> => {
   if (USE_MOCK_DATA) {
-    console.log(`[AdminAPI] Mock: Rejected provider ${providerId} with reason: ${reason}`);
+    console.log(
+      `[AdminAPI] Mock: Rejected provider ${providerId} with reason: ${reason}`
+    );
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const provider = mockProvidersList.find((p) => p.id === providerId);
@@ -354,7 +368,10 @@ export const adminRejectProvider = async (
       throw new Error("Provider not found");
     }
 
-    const updatedProvider = { ...provider, status: "rejected" as ProviderStatus };
+    const updatedProvider = {
+      ...provider,
+      status: "rejected" as ProviderStatus,
+    };
     const index = mockProvidersList.findIndex((p) => p.id === providerId);
     if (index !== -1) {
       mockProvidersList[index] = updatedProvider;
@@ -377,7 +394,9 @@ export const adminRejectProvider = async (
     mutation,
     { providerId, reason }
   );
-  console.log(`[AdminAPI] Rejected provider ${providerId} with reason: ${reason}`);
+  console.log(
+    `[AdminAPI] Rejected provider ${providerId} with reason: ${reason}`
+  );
   return result.adminRejectProvider;
 };
 

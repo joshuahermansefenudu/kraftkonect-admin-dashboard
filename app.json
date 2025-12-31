@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "kraftkonect-admin-dashboard",
-    "slug": "kraftkonect-admin-dashboard",
+    "name": "KraftKonect",
+    "slug": "kraftkonect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "kraftkonect-admin",
+    "scheme": "kraftkonect",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.kraftkonect.admin.dashboard",
+      "bundleIdentifier": "com.kraftkonect.app",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
@@ -27,7 +27,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.kraftkonect.admin.dashboard",
+      "package": "com.kraftkonect.app",
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
