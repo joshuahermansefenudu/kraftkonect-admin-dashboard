@@ -5,6 +5,7 @@ import {
   UserRole,
   UserStatus,
   ProviderStatus,
+  ProviderUpdateInput,
 } from "@/types/admin";
 import { paginateData } from "@/mocks/users";
 
@@ -326,6 +327,45 @@ export const adminUpdateProviderStatus = async (
   `;
   const result = await makeGraphQLRequest<{ adminUpdateProviderStatus: any }>(mutation, { providerId, status });
   return result.adminUpdateProviderStatus;
+};
+
+export const updateProvider = async (
+  providerId: string,
+  input: ProviderUpdateInput
+): Promise<BackendProvider> => {
+  const mutation = `
+    mutation UpdateProvider($id: ID!, $input: UpdateProviderInput!) {
+      updateProvider(id: $id, input: $input) {
+        id
+        name
+        status
+        category
+        bio
+        verified
+      }
+    }
+  `;
+  const result = await makeGraphQLRequest<{ updateProvider: any }>(mutation, {
+    id: providerId,
+    input,
+  });
+  const p = result.updateProvider;
+  return {
+    id: p.id,
+    name: p.name || "Unknown",
+    email: "",
+    phone: "",
+    category: p.category || "",
+    location: "",
+    status: p.status,
+    submittedAt: "",
+    documents: [],
+    bio: p.bio || "",
+    aiPhotoQuality: null,
+    aiIdReadable: null,
+    aiFaceMatch: null,
+    aiDuplicateFlag: null,
+  };
 };
 
 export const adminAiPreScreenApi = async (providerId: string): Promise<BackendProvider> => {
