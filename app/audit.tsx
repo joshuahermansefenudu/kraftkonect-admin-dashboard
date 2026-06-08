@@ -6,18 +6,23 @@ import {
   TouchableOpacity,
   TextInput,
   useWindowDimensions,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
-import { mockAuditLogs, AuditLog } from "@/mocks/dashboard";
 import { Search, FileText, Download } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { adminAuditLogsQuery, AdminAuditLog as AuditLog } from "@/services/adminApi";
 
 export default function AuditLogsScreen() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const insets = useSafeAreaInsets();
+
+  const [allLogs, setAllLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterResource, setFilterResource] = useState<
     "all" | "provider" | "booking" | "dispute" | "ticket" | "category"
@@ -26,7 +31,20 @@ export default function AuditLogsScreen() {
     "all" | "approve" | "reject" | "resolve" | "cancel" | "create" | "update" | "delete" | "close"
   >("all");
 
-  const filteredLogs = mockAuditLogs.filter((log) => {
+  const loadLogs = () => {
+    setLoading(true);
+    setError(null);
+    adminAuditLogsQuery({})
+      .then(setAllLogs)
+      .catch((e) => setError(e.message ?? "Failed to load audit logs"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadLogs();
+  }, []);
+
+  const filteredLogs = allLogs.filter((log) => {
     const matchesSearch =
       log.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.adminUser.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -68,6 +86,21 @@ export default function AuditLogsScreen() {
               <Text style={styles.exportButtonText}>Export Logs</Text>
             </TouchableOpacity>
           </View>
+
+          {loading && (
+            <View style={{ padding: 40, alignItems: "center" }}>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
+              <Text style={{ marginTop: 12, color: Colors.light.textSecondary }}>Loading audit logs…</Text>
+            </View>
+          )}
+          {error && !loading && (
+            <View style={{ padding: 16, backgroundColor: `${Colors.light.error}10`, borderRadius: 8, marginBottom: 16 }}>
+              <Text style={{ color: Colors.light.error, marginBottom: 8 }}>{error}</Text>
+              <TouchableOpacity onPress={loadLogs}>
+                <Text style={{ color: Colors.light.primary, fontWeight: "600" }}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.searchBar}>
             <Search size={20} color={Colors.light.textSecondary} />

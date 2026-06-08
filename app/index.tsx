@@ -11,9 +11,10 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import Sidebar from "@/components/Sidebar";
 import MetricCard from "@/components/MetricCard";
 import Colors from "@/constants/colors";
-import { mockMetrics, mockChartData } from "@/mocks/dashboard";
 import Svg, { Line, Circle } from "react-native-svg";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { ActivityIndicator } from "react-native";
+import { adminGetDashboard, DashboardData } from "@/services/adminApi";
 import { Calendar, ChevronDown } from "lucide-react-native";
 
 type DateRange = {
@@ -55,31 +56,45 @@ export default function DashboardOverview() {
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
   const insets = useSafeAreaInsets();
-  
+
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>(
     dateRangeOptions[1]
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    adminGetDashboard()
+      .then(setDashboard)
+      .catch((e) => setError(e.message ?? "Failed to load dashboard"))
+      .finally(() => setLoading(false));
+  }, []);
 
   const chartWidth = isMobile ? width - 80 : isTablet ? width - 340 : 600;
   const chartHeight = isMobile ? 180 : 200;
 
-  const maxRevenue = useMemo(() => {
-    return Math.max(...mockChartData.monthly.map((d) => d.revenue));
-  }, []);
+  const revenueData = dashboard?.revenue ?? [];
+
+  const maxRevenue = useMemo(
+    () => Math.max(1, ...revenueData.map((d) => d.revenue)),
+    [revenueData]
+  );
 
   const points = useMemo(() => {
+    if (!revenueData.length) return [];
     const paddingX = 40;
     const paddingY = 20;
-    const width = chartWidth - paddingX * 2;
-    const height = chartHeight - paddingY * 2;
+    const w = chartWidth - paddingX * 2;
+    const h = chartHeight - paddingY * 2;
 
-    return mockChartData.monthly.map((item, index) => {
-      const x = paddingX + (width / (mockChartData.monthly.length - 1)) * index;
-      const y = paddingY + height - (item.revenue / maxRevenue) * height;
+    return revenueData.map((item, index) => {
+      const x = paddingX + (w / Math.max(revenueData.length - 1, 1)) * index;
+      const y = paddingY + h - (item.revenue / maxRevenue) * h;
       return { x, y, ...item };
     });
-  }, [chartWidth, chartHeight, maxRevenue]);
+  }, [chartWidth, chartHeight, maxRevenue, revenueData]);
 
   return (
     <View style={styles.container}>
@@ -157,8 +172,19 @@ export default function DashboardOverview() {
             </TouchableOpacity>
           </Modal>
 
+          {loading && (
+            <View style={{ padding: 40, alignItems: "center" }}>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
+            </View>
+          )}
+          {error && !loading && (
+            <View style={{ padding: 24, backgroundColor: `${Colors.light.error}10`, borderRadius: 8, marginBottom: 24 }}>
+              <Text style={{ color: Colors.light.error, fontSize: 14 }}>{error}</Text>
+            </View>
+          )}
+
           <View style={[styles.metricsGrid, isMobile && styles.metricsGridMobile]}>
-            {mockMetrics.map((metric, index) => (
+            {(dashboard?.metrics ?? []).map((metric, index) => (
               <MetricCard
                 key={index}
                 label={metric.label}
@@ -204,7 +230,7 @@ export default function DashboardOverview() {
               </Svg>
 
               <View style={styles.chartLabels}>
-                {mockChartData.monthly.map((item) => (
+                {revenueData.map((item) => (
                   <Text key={item.month} style={styles.chartLabel}>
                     {item.month}
                   </Text>
@@ -217,7 +243,7 @@ export default function DashboardOverview() {
               <Text style={[styles.chartSubtitle, isMobile && styles.chartSubtitleMobile]}>By booking volume</Text>
 
               <View style={styles.categoryList}>
-                {mockChartData.categories.map((cat, index) => (
+                {(dashboard?.categories ?? []).map((cat, index) => (
                   <View key={index} style={styles.categoryItem}>
                     <View style={styles.categoryInfo}>
                       <Text style={styles.categoryName}>{cat.name}</Text>

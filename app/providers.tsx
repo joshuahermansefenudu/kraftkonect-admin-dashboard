@@ -7,23 +7,47 @@ import {
   Alert,
   Modal,
   useWindowDimensions,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
-import { mockProviders, Provider } from "@/mocks/dashboard";
 import { CheckCircle, XCircle, FileText, Mail, Phone, MapPin, X, Download } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  adminProvidersQuery,
+  adminApproveProvider,
+  adminRejectProvider,
+  BackendProvider,
+} from "@/services/adminApi";
+
+type Provider = BackendProvider;
 
 export default function ProviderApprovalsScreen() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const insets = useSafeAreaInsets();
-  const [providers, setProviders] = useState<Provider[]>(mockProviders);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
   const [viewingDocument, setViewingDocument] = useState<{ name: string; provider: string } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const loadProviders = () => {
+    setLoading(true);
+    setError(null);
+    adminProvidersQuery({ status: "pending" })
+      .then((res) => setProviders(res.providers as Provider[]))
+      .catch((e) => setError(e.message ?? "Failed to load providers"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadProviders();
+  }, []);
 
   const pendingProviders = providers.filter((p) => p.status === "pending");
 
@@ -33,32 +57,35 @@ export default function ProviderApprovalsScreen() {
     setShowModal(true);
   };
 
-  const confirmAction = () => {
-    if (!selectedProvider || !actionType) return;
+  const confirmAction = async () => {
+    if (!selectedProvider || !actionType || actionLoading) return;
 
-    console.log(`${actionType === "approve" ? "Approving" : "Rejecting"} provider ${selectedProvider.id}`);
-
-    Alert.alert(
-      actionType === "approve" ? "Provider Approved" : "Provider Rejected",
-      `${selectedProvider.name} has been ${actionType === "approve" ? "approved" : "rejected"} and notified via email.`,
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            const updatedProviders = providers.map((p) =>
-              p.id === selectedProvider.id
-                ? { ...p, status: (actionType === "approve" ? "approved" : "rejected") as Provider["status"] }
-                : p
-            );
-            setProviders(updatedProviders);
-          },
-        },
-      ]
-    );
-
-    setShowModal(false);
-    setSelectedProvider(null);
-    setActionType(null);
+    setActionLoading(true);
+    try {
+      if (actionType === "approve") {
+        await adminApproveProvider(selectedProvider.id);
+      } else {
+        await adminRejectProvider(selectedProvider.id);
+      }
+      Alert.alert(
+        actionType === "approve" ? "Provider Approved" : "Provider Rejected",
+        `${selectedProvider.name} has been ${actionType === "approve" ? "approved" : "rejected"}.`
+      );
+      setProviders((prev) =>
+        prev.map((p) =>
+          p.id === selectedProvider.id
+            ? { ...p, status: (actionType === "approve" ? "approved" : "rejected") as Provider["status"] }
+            : p
+        )
+      );
+    } catch (e: any) {
+      Alert.alert("Error", e.message ?? "Action failed. Please try again.");
+    } finally {
+      setActionLoading(false);
+      setShowModal(false);
+      setSelectedProvider(null);
+      setActionType(null);
+    }
   };
 
   return (
@@ -87,7 +114,19 @@ export default function ProviderApprovalsScreen() {
             </View>
           </View>
 
-          {pendingProviders.length === 0 ? (
+          {loading ? (
+            <View style={{ padding: 60, alignItems: "center" }}>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
+              <Text style={{ marginTop: 12, color: Colors.light.textSecondary }}>Loading providers…</Text>
+            </View>
+          ) : error ? (
+            <View style={{ padding: 24, backgroundColor: `${Colors.light.error}10`, borderRadius: 8 }}>
+              <Text style={{ color: Colors.light.error, marginBottom: 12 }}>{error}</Text>
+              <TouchableOpacity onPress={loadProviders} style={{ backgroundColor: Colors.light.primary, padding: 10, borderRadius: 6, alignSelf: "flex-start" }}>
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : pendingProviders.length === 0 ? (
             <View style={styles.emptyState}>
               <CheckCircle size={64} color={Colors.light.success} />
               <Text style={styles.emptyTitle}>All Caught Up!</Text>
@@ -151,12 +190,18 @@ export default function ProviderApprovalsScreen() {
                   actionType === "approve"
                     ? styles.approveButton
                     : styles.rejectButton,
+                  actionLoading && { opacity: 0.6 },
                 ]}
                 onPress={confirmAction}
+                disabled={actionLoading}
               >
-                <Text style={styles.modalButtonText}>
-                  {actionType === "approve" ? "Approve" : "Reject"}
-                </Text>
+                {actionLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.modalButtonText}>
+                    {actionType === "approve" ? "Approve" : "Reject"}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

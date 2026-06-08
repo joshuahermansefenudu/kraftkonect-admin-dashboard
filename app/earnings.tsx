@@ -8,26 +8,48 @@ import {
   Alert,
   Modal,
   useWindowDimensions,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
-import { mockPayouts, Payout } from "@/mocks/dashboard";
 import { Search, Download, DollarSign } from "lucide-react-native";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  adminPayoutsQuery,
+  adminProcessPayoutApi,
+  AdminPayout as Payout,
+} from "@/services/adminApi";
 
 export default function EarningsScreen() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
   const insets = useSafeAreaInsets();
-  
+
+  const [allPayouts, setAllPayouts] = useState<Payout[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "pending" | "processing" | "completed" | "failed">("all");
   const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null);
   const [showProcessModal, setShowProcessModal] = useState(false);
+  const [processLoading, setProcessLoading] = useState(false);
 
-  const filteredPayouts = mockPayouts.filter((p) => {
+  const loadPayouts = () => {
+    setLoading(true);
+    setError(null);
+    adminPayoutsQuery({})
+      .then(setAllPayouts)
+      .catch((e) => setError(e.message ?? "Failed to load payouts"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadPayouts();
+  }, []);
+
+  const filteredPayouts = allPayouts.filter((p) => {
     const matchesSearch =
       p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.providerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -39,31 +61,40 @@ export default function EarningsScreen() {
   });
 
   const stats = useMemo(() => {
-    const totalPending = mockPayouts
+    const totalPending = allPayouts
       .filter((p) => p.status === "pending")
       .reduce((sum, p) => sum + p.amount, 0);
-    const totalProcessing = mockPayouts
+    const totalProcessing = allPayouts
       .filter((p) => p.status === "processing")
       .reduce((sum, p) => sum + p.amount, 0);
-    const totalCompleted = mockPayouts
+    const totalCompleted = allPayouts
       .filter((p) => p.status === "completed")
       .reduce((sum, p) => sum + p.amount, 0);
 
     return { totalPending, totalProcessing, totalCompleted };
-  }, []);
+  }, [allPayouts]);
 
   const handleProcessPayout = (payout: Payout) => {
     setSelectedPayout(payout);
     setShowProcessModal(true);
   };
 
-  const confirmProcessPayout = () => {
-    if (selectedPayout) {
-      console.log(`Processing payout ${selectedPayout.id} for ${selectedPayout.providerName}`);
+  const confirmProcessPayout = async () => {
+    if (!selectedPayout || processLoading) return;
+    setProcessLoading(true);
+    try {
+      await adminProcessPayoutApi(selectedPayout.id);
+      setAllPayouts((prev) =>
+        prev.map((p) => (p.id === selectedPayout.id ? { ...p, status: "processing" as const } : p))
+      );
       Alert.alert(
         "Payout Processed",
-        `Payout ${selectedPayout.id} for ${selectedPayout.providerName} has been marked as processing.`
+        `Payout for ${selectedPayout.providerName} has been marked as processing.`
       );
+    } catch (e: any) {
+      Alert.alert("Error", e.message ?? "Failed to process payout");
+    } finally {
+      setProcessLoading(false);
       setShowProcessModal(false);
       setSelectedPayout(null);
     }
@@ -101,21 +132,36 @@ export default function EarningsScreen() {
             </TouchableOpacity>
           </View>
 
+          {loading && (
+            <View style={{ padding: 40, alignItems: "center" }}>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
+              <Text style={{ marginTop: 12, color: Colors.light.textSecondary }}>Loading payouts…</Text>
+            </View>
+          )}
+          {error && !loading && (
+            <View style={{ padding: 16, backgroundColor: `${Colors.light.error}10`, borderRadius: 8, marginBottom: 16 }}>
+              <Text style={{ color: Colors.light.error, marginBottom: 8 }}>{error}</Text>
+              <TouchableOpacity onPress={loadPayouts}>
+                <Text style={{ color: Colors.light.primary, fontWeight: "600" }}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <View style={[styles.statsRow, isMobile && styles.statsRowMobile]}>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Pending Payouts</Text>
-              <Text style={styles.statValue}>${stats.totalPending.toLocaleString()}</Text>
+              <Text style={styles.statValue}>₦{stats.totalPending.toLocaleString()}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Processing</Text>
               <Text style={[styles.statValue, { color: Colors.light.warning }]}>
-                ${stats.totalProcessing.toLocaleString()}
+                ₦{stats.totalProcessing.toLocaleString()}
               </Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Completed (This Month)</Text>
               <Text style={[styles.statValue, { color: Colors.light.success }]}>
-                ${stats.totalCompleted.toLocaleString()}
+                ₦{stats.totalCompleted.toLocaleString()}
               </Text>
             </View>
           </View>
@@ -239,10 +285,15 @@ export default function EarningsScreen() {
                 <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalButton}
+                style={[styles.modalButton, processLoading && { opacity: 0.6 }]}
                 onPress={confirmProcessPayout}
+                disabled={processLoading}
               >
-                <Text style={styles.modalButtonText}>Process</Text>
+                {processLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.modalButtonText}>Process</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

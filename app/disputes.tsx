@@ -6,12 +6,19 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Modal,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
-import { mockDisputes, Dispute } from "@/mocks/dashboard";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  adminDisputesQuery,
+  adminResolveDisputeApi,
+  adminEscalateDisputeApi,
+  AdminDispute as Dispute,
+} from "@/services/adminApi";
 
 type FilterType = "all" | "pending" | "high" | "medium" | "low" | "resolved";
 type SortType = "date" | "urgency";
@@ -20,10 +27,25 @@ export default function DisputeCenterScreen() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const insets = useSafeAreaInsets();
-  
+
   const [filter, setFilter] = useState<FilterType>("all");
   const [sortBy, setSortBy] = useState<SortType>("date");
-  const [disputes, setDisputes] = useState<Dispute[]>(mockDisputes);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadDisputes = () => {
+    setLoading(true);
+    setError(null);
+    adminDisputesQuery({})
+      .then(setDisputes)
+      .catch((e) => setError(e.message ?? "Failed to load disputes"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadDisputes();
+  }, []);
 
   const filteredAndSortedDisputes = useMemo(() => {
     let filtered = disputes;
@@ -51,16 +73,28 @@ export default function DisputeCenterScreen() {
     return sorted;
   }, [disputes, filter, sortBy]);
 
-  const handleResolve = (disputeId: string) => {
-    setDisputes(prev => prev.map(d => 
-      d.id === disputeId ? { ...d, status: "resolved" as const } : d
-    ));
+  const handleResolve = async (disputeId: string) => {
+    try {
+      await adminResolveDisputeApi(disputeId, "Resolved by admin");
+      setDisputes((prev) =>
+        prev.map((d) => (d.id === disputeId ? { ...d, status: "resolved" as const } : d))
+      );
+    } catch (e: any) {
+      Alert.alert("Error", e.message ?? "Failed to resolve dispute");
+    }
   };
 
-  const handleEscalate = (disputeId: string, severity: "high" | "medium" | "low") => {
-    setDisputes(prev => prev.map(d => 
-      d.id === disputeId ? { ...d, status: "escalated" as const, severity } : d
-    ));
+  const handleEscalate = async (disputeId: string, severity: "high" | "medium" | "low") => {
+    try {
+      await adminEscalateDisputeApi(disputeId, `Escalated to ${severity}`);
+      setDisputes((prev) =>
+        prev.map((d) =>
+          d.id === disputeId ? { ...d, status: "escalated" as const, severity } : d
+        )
+      );
+    } catch (e: any) {
+      Alert.alert("Error", e.message ?? "Failed to escalate dispute");
+    }
   };
 
   return (
@@ -85,6 +119,21 @@ export default function DisputeCenterScreen() {
               </Text>
             </View>
           </View>
+
+          {loading && (
+            <View style={{ padding: 40, alignItems: "center" }}>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
+              <Text style={{ marginTop: 12, color: Colors.light.textSecondary }}>Loading disputes…</Text>
+            </View>
+          )}
+          {error && !loading && (
+            <View style={{ padding: 16, backgroundColor: `${Colors.light.error}10`, borderRadius: 8, marginBottom: 16 }}>
+              <Text style={{ color: Colors.light.error, marginBottom: 8 }}>{error}</Text>
+              <TouchableOpacity onPress={loadDisputes}>
+                <Text style={{ color: Colors.light.primary, fontWeight: "600" }}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.filtersContainer}>
             <ScrollView

@@ -11,11 +11,11 @@ import {
   useWindowDimensions,
   Image,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
-import { mockCategories, Category } from "@/mocks/dashboard";
 import {
   Plus,
   Edit,
@@ -28,8 +28,15 @@ import {
   Upload,
   X,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as ImagePicker from "expo-image-picker";
+import {
+  adminCategoriesQuery,
+  adminCreateCategoryApi,
+  adminUpdateCategoryApi,
+  adminToggleCategoryStatusApi,
+  AdminCategory as Category,
+} from "@/services/adminApi";
 
 export default function CategoriesScreen() {
   const { width } = useWindowDimensions();
@@ -46,9 +53,12 @@ export default function CategoriesScreen() {
     Math.floor((contentWidth - gridGap * (columns - 1)) / columns)
   );
   
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -56,6 +66,19 @@ export default function CategoriesScreen() {
     iconUri: "",
     active: true,
   });
+
+  const loadCategories = () => {
+    setLoading(true);
+    setError(null);
+    adminCategoriesQuery()
+      .then(setCategories)
+      .catch((e) => setError(e.message ?? "Failed to load categories"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
 
   const handleAddCategory = () => {
     setEditingCategory(null);
@@ -81,50 +104,64 @@ export default function CategoriesScreen() {
     setShowModal(true);
   };
 
-  const handleSaveCategory = () => {
+  const handleSaveCategory = async () => {
     if (!formData.name.trim()) {
       Alert.alert("Error", "Category name is required");
       return;
     }
 
-    if (editingCategory) {
-      console.log(`Updating category ${editingCategory.id}: ${formData.name}`);
-      Alert.alert("Category Updated", `${formData.name} has been updated.`);
-    } else {
-      console.log(`Creating new category: ${formData.name}`);
-      Alert.alert("Category Created", `${formData.name} has been created.`);
+    setSaveLoading(true);
+    try {
+      if (editingCategory) {
+        const updated = await adminUpdateCategoryApi(editingCategory.id, {
+          name: formData.name,
+          description: formData.description,
+        });
+        setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        Alert.alert("Category Updated", `${formData.name} has been updated.`);
+      } else {
+        const created = await adminCreateCategoryApi(formData.name, formData.description);
+        setCategories((prev) => [...prev, created]);
+        Alert.alert("Category Created", `${formData.name} has been created.`);
+      }
+      setShowModal(false);
+      setEditingCategory(null);
+    } catch (e: any) {
+      Alert.alert("Error", e.message ?? "Failed to save category");
+    } finally {
+      setSaveLoading(false);
     }
-
-    setShowModal(false);
-    setEditingCategory(null);
   };
 
   const handleDeleteCategory = (category: Category) => {
     Alert.alert(
       "Delete Category",
-      `Are you sure you want to delete "${category.name}"? This action cannot be undone.`,
+      `Are you sure you want to delete "${category.name}"? This cannot be undone.`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            console.log(`Deleting category ${category.id}: ${category.name}`);
-            Alert.alert("Category Deleted", `${category.name} has been deleted.`);
+          onPress: async () => {
+            try {
+              await adminToggleCategoryStatusApi(category.id, false);
+              setCategories((prev) => prev.filter((c) => c.id !== category.id));
+            } catch (e: any) {
+              Alert.alert("Error", e.message ?? "Failed to delete category");
+            }
           },
         },
       ]
     );
   };
 
-  const handleToggleActive = (category: Category) => {
-    console.log(
-      `Toggling category ${category.id} active status: ${!category.active}`
-    );
-    const updatedCategories = categories.map((c) =>
-      c.id === category.id ? { ...c, active: !c.active } : c
-    );
-    setCategories(updatedCategories);
+  const handleToggleActive = async (category: Category) => {
+    try {
+      const updated = await adminToggleCategoryStatusApi(category.id, !category.active);
+      setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    } catch (e: any) {
+      Alert.alert("Error", e.message ?? "Failed to update category status");
+    }
   };
 
   const handlePickImage = async () => {
@@ -191,6 +228,21 @@ export default function CategoriesScreen() {
               <Text style={styles.addButtonText}>Add Category</Text>
             </TouchableOpacity>
           </View>
+
+          {loading && (
+            <View style={{ padding: 40, alignItems: "center" }}>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
+              <Text style={{ marginTop: 12, color: Colors.light.textSecondary }}>Loading categories…</Text>
+            </View>
+          )}
+          {error && !loading && (
+            <View style={{ padding: 16, backgroundColor: `${Colors.light.error}10`, borderRadius: 8, marginBottom: 16 }}>
+              <Text style={{ color: Colors.light.error, marginBottom: 8 }}>{error}</Text>
+              <TouchableOpacity onPress={loadCategories}>
+                <Text style={{ color: Colors.light.primary, fontWeight: "600" }}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View
             style={[
@@ -317,12 +369,17 @@ export default function CategoriesScreen() {
                 <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalButton}
+                style={[styles.modalButton, saveLoading && { opacity: 0.6 }]}
                 onPress={handleSaveCategory}
+                disabled={saveLoading}
               >
-                <Text style={styles.modalButtonText}>
-                  {editingCategory ? "Update" : "Create"}
-                </Text>
+                {saveLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.modalButtonText}>
+                    {editingCategory ? "Update" : "Create"}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

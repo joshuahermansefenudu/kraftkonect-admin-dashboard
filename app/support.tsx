@@ -6,24 +6,42 @@ import {
   TouchableOpacity,
   TextInput,
   useWindowDimensions,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
-import { mockTickets, Ticket } from "@/mocks/dashboard";
 import { Search } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { adminTicketsQuery, AdminTicket as Ticket } from "@/services/adminApi";
 
 export default function SupportCenterScreen() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const insets = useSafeAreaInsets();
+
+  const [allTickets, setAllTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "open" | "in-progress" | "resolved">(
     "all"
   );
 
-  const filteredTickets = mockTickets.filter((t) => {
+  const loadTickets = () => {
+    setLoading(true);
+    setError(null);
+    adminTicketsQuery({})
+      .then(setAllTickets)
+      .catch((e) => setError(e.message ?? "Failed to load tickets"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  const filteredTickets = allTickets.filter((t) => {
     const matchesSearch =
       t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -65,6 +83,21 @@ export default function SupportCenterScreen() {
               onChangeText={setSearchQuery}
             />
           </View>
+
+          {loading && (
+            <View style={{ padding: 40, alignItems: "center" }}>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
+              <Text style={{ marginTop: 12, color: Colors.light.textSecondary }}>Loading tickets…</Text>
+            </View>
+          )}
+          {error && !loading && (
+            <View style={{ padding: 16, backgroundColor: `${Colors.light.error}10`, borderRadius: 8, marginBottom: 16 }}>
+              <Text style={{ color: Colors.light.error, marginBottom: 8 }}>{error}</Text>
+              <TouchableOpacity onPress={loadTickets}>
+                <Text style={{ color: Colors.light.primary, fontWeight: "600" }}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={[styles.filterBar, isMobile && styles.filterBarMobile]}>
             <FilterButton

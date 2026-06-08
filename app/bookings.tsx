@@ -8,26 +8,48 @@ import {
   Alert,
   Modal,
   useWindowDimensions,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
-import { mockBookings, Booking } from "@/mocks/dashboard";
 import { Search, Eye, X, DollarSign } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  adminBookingsQuery,
+  adminCancelBooking,
+  AdminBooking as Booking,
+} from "@/services/adminApi";
 
 export default function BookingManagementScreen() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const insets = useSafeAreaInsets();
-  
+
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [refundAmount, setRefundAmount] = useState("");
+  const [cancelLoading, setCancelLoading] = useState(false);
 
-  const filteredBookings = mockBookings.filter(
+  const loadBookings = () => {
+    setLoading(true);
+    setError(null);
+    adminBookingsQuery({})
+      .then((res) => setAllBookings(res.bookings))
+      .catch((e) => setError(e.message ?? "Failed to load bookings"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadBookings();
+  }, []);
+
+  const filteredBookings = allBookings.filter(
     (b) =>
       b.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       b.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,6 +80,15 @@ export default function BookingManagementScreen() {
             </View>
           </View>
 
+          {error && (
+            <View style={{ padding: 16, backgroundColor: `${Colors.light.error}10`, borderRadius: 8, marginBottom: 16 }}>
+              <Text style={{ color: Colors.light.error }}>{error}</Text>
+              <TouchableOpacity onPress={loadBookings} style={{ marginTop: 8 }}>
+                <Text style={{ color: Colors.light.primary, fontWeight: "600" }}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <View style={styles.searchBar}>
             <Search size={20} color={Colors.light.textSecondary} />
             <TextInput
@@ -69,7 +100,12 @@ export default function BookingManagementScreen() {
             />
           </View>
 
-          {isMobile ? (
+          {loading ? (
+            <View style={{ padding: 40, alignItems: "center" }}>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
+              <Text style={{ marginTop: 12, color: Colors.light.textSecondary }}>Loading bookings…</Text>
+            </View>
+          ) : isMobile ? (
             <View style={styles.cardsList}>
               {filteredBookings.map((booking) => (
                 <BookingCard
@@ -181,7 +217,8 @@ export default function BookingManagementScreen() {
                 </View>
 
                 {selectedBooking.status !== "cancelled" &&
-                  selectedBooking.status !== "completed" && (
+                  selectedBooking.status !== "completed" &&
+                  selectedBooking.status !== "refunded" && (
                     <View style={styles.actionSection}>
                       <TouchableOpacity
                         style={styles.cancelButton}
@@ -248,19 +285,26 @@ export default function BookingManagementScreen() {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.cancelConfirmButton]}
-                onPress={() => {
-                  if (selectedBooking) {
-                    console.log(
-                      `Cancelling booking ${selectedBooking.id} with refund: ${refundAmount}`
+                style={[styles.modalButton, styles.cancelConfirmButton, cancelLoading && { opacity: 0.6 }]}
+                disabled={cancelLoading}
+                onPress={async () => {
+                  if (!selectedBooking) return;
+                  setCancelLoading(true);
+                  try {
+                    await adminCancelBooking(selectedBooking._rawId, `Refund: ${refundAmount}`);
+                    setAllBookings((prev) =>
+                      prev.map((b) =>
+                        b._rawId === selectedBooking._rawId ? { ...b, status: "cancelled" as const } : b
+                      )
                     );
-                    Alert.alert(
-                      "Booking Cancelled",
-                      `Booking ${selectedBooking.id} has been cancelled and a refund of ${refundAmount} has been processed.`
-                    );
+                    Alert.alert("Booking Cancelled", `Booking ${selectedBooking.id} has been cancelled.`);
+                  } catch (e: any) {
+                    Alert.alert("Error", e.message ?? "Failed to cancel booking");
+                  } finally {
+                    setCancelLoading(false);
+                    setShowCancelModal(false);
+                    setRefundAmount("");
                   }
-                  setShowCancelModal(false);
-                  setRefundAmount("");
                 }}
               >
                 <Text
@@ -294,7 +338,7 @@ function BookingCard({
           backgroundColor: `${Colors.light.success}15`,
           color: Colors.light.success,
         };
-      case "in-progress":
+      case "in_progress":
         return {
           backgroundColor: `${Colors.light.primary}15`,
           color: Colors.light.primary,
@@ -385,7 +429,7 @@ function BookingRow({
           backgroundColor: `${Colors.light.success}15`,
           color: Colors.light.success,
         };
-      case "in-progress":
+      case "in_progress":
         return {
           backgroundColor: `${Colors.light.primary}15`,
           color: Colors.light.primary,

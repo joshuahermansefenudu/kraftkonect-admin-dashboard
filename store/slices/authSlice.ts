@@ -7,18 +7,16 @@ interface User {
 
 interface AuthState {
   user: User | null;
+  accessToken: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  loginStep: "email" | "2fa";
-  pendingEmail: string;
 }
 
 const initialState: AuthState = {
   user: null,
+  accessToken: null,
   isLoading: false,
   isAuthenticated: false,
-  loginStep: "email",
-  pendingEmail: "",
 };
 
 const authSlice = createSlice({
@@ -30,24 +28,19 @@ const authSlice = createSlice({
       state.isAuthenticated = !!action.payload;
       state.isLoading = false;
     },
+    setAccessToken: (state, action: PayloadAction<string | null>) => {
+      state.accessToken = action.payload;
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
-    setLoginStep: (state, action: PayloadAction<"email" | "2fa">) => {
-      state.loginStep = action.payload;
-    },
-    setPendingEmail: (state, action: PayloadAction<string>) => {
-      state.pendingEmail = action.payload;
-    },
     logout: (state) => {
       state.user = null;
+      state.accessToken = null;
       state.isAuthenticated = false;
-      state.loginStep = "email";
-      state.pendingEmail = "";
     },
   },
 });
 
-export const { setUser, setLoading, setLoginStep, setPendingEmail, logout } =
-  authSlice.actions;
+export const { setUser, setAccessToken, setLoading, logout } = authSlice.actions;
 export default authSlice.reducer;

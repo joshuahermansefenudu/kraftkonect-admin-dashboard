@@ -10,21 +10,18 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "expo-router";
 import Colors from "@/constants/colors";
 import { Lock, Mail, Shield } from "lucide-react-native";
 
 export default function LoginScreen() {
-  const { login, verify2FA, loginStep } = useAuth();
-  const router = useRouter();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [twoFACode, setTwoFACode] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleEmailLogin = async () => {
+  const handleLogin = async () => {
     setError("");
     if (!email || !password) {
       setError("Please enter both email and password");
@@ -36,153 +33,71 @@ export default function LoginScreen() {
     setIsLoading(false);
 
     if (!success) {
-      setError("Invalid email or password");
+      setError("Invalid email or password. Check your credentials and try again.");
     }
   };
-
-  const handle2FAVerify = async () => {
-    setError("");
-    if (!twoFACode) {
-      setError("Please enter the 2FA code");
-      return;
-    }
-
-    setIsLoading(true);
-    const success = await verify2FA(twoFACode);
-    setIsLoading(false);
-
-    if (success) {
-      router.replace("/");
-    } else {
-      setError("Invalid 2FA code");
-      setTwoFACode("");
-    }
-  };
-
-  const renderEmailStep = () => (
-    <>
-      <View style={styles.iconContainer}>
-        <Shield size={48} color={Colors.light.primary} />
-      </View>
-
-      <Text style={styles.title}>Admin Login</Text>
-      <Text style={styles.subtitle}>
-        Sign in to access the KraftKonectAdmin dashboard
-      </Text>
-
-      <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Email Address</Text>
-          <View style={styles.inputWrapper}>
-            <Mail size={20} color={Colors.light.textSecondary} />
-            <TextInput
-              style={styles.input}
-              placeholder="admin@kraftkonect.com"
-              placeholderTextColor={Colors.light.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              editable={!isLoading}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Password</Text>
-          <View style={styles.inputWrapper}>
-            <Lock size={20} color={Colors.light.textSecondary} />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your password"
-              placeholderTextColor={Colors.light.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              editable={!isLoading}
-            />
-          </View>
-        </View>
-
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-        <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleEmailLogin}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.buttonText}>Continue</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.demoCredentials}>
-        <Text style={styles.demoTitle}>Demo Credentials:</Text>
-        <Text style={styles.demoText}>Email: admin@kraftkonect.com</Text>
-        <Text style={styles.demoText}>Password: admin123</Text>
-      </View>
-    </>
-  );
-
-  const render2FAStep = () => (
-    <>
-      <View style={styles.iconContainer}>
-        <Shield size={48} color={Colors.light.primary} />
-      </View>
-
-      <Text style={styles.title}>Two-Factor Authentication</Text>
-      <Text style={styles.subtitle}>
-        Enter the 6-digit code to complete your login
-      </Text>
-
-      <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Authentication Code</Text>
-          <View style={styles.inputWrapper}>
-            <Shield size={20} color={Colors.light.textSecondary} />
-            <TextInput
-              style={styles.input}
-              placeholder="000000"
-              placeholderTextColor={Colors.light.textSecondary}
-              value={twoFACode}
-              onChangeText={setTwoFACode}
-              keyboardType="number-pad"
-              maxLength={6}
-              editable={!isLoading}
-            />
-          </View>
-        </View>
-
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-        <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handle2FAVerify}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.buttonText}>Verify & Login</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.demoCredentials}>
-        <Text style={styles.demoTitle}>Demo 2FA Code:</Text>
-        <Text style={styles.demoText}>123456</Text>
-      </View>
-    </>
-  );
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.content}>
         <View style={styles.card}>
-          {loginStep === "email" ? renderEmailStep() : render2FAStep()}
+          <View style={styles.iconContainer}>
+            <Shield size={48} color={Colors.light.primary} />
+          </View>
+
+          <Text style={styles.title}>Admin Login</Text>
+          <Text style={styles.subtitle}>
+            Sign in to access the KraftKonnect admin dashboard
+          </Text>
+
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <View style={styles.inputWrapper}>
+                <Mail size={20} color={Colors.light.textSecondary} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="admin@example.com"
+                  placeholderTextColor={Colors.light.textSecondary}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={styles.inputWrapper}>
+                <Lock size={20} color={Colors.light.textSecondary} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your password"
+                  placeholderTextColor={Colors.light.textSecondary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.button, isLoading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Sign In</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </SafeAreaView>
