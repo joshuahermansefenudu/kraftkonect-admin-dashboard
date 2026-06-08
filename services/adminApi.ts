@@ -11,7 +11,7 @@ import { paginateData } from "@/mocks/users";
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ??
-  "https://artisanhubb-backend.onrender.com/graphql";
+  "https://kraftkonnect-backend-230084714703.us-central1.run.app/graphql";
 const USE_MOCK_DATA = false;
 
 // ── Token management ─────────────────────────────────────────────────────────
