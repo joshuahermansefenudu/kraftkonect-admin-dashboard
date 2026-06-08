@@ -787,6 +787,59 @@ export const adminToggleCategoryStatusApi = async (
   };
 };
 
+// ── Analytics ────────────────────────────────────────────────────────────────
+
+export interface SkillDistribution {
+  name: string;
+  value: number;
+}
+
+export interface MonthlyVolume {
+  month: string;
+  bookings: number;
+  revenue: number;
+}
+
+export interface DemandForecastItem {
+  id: string;
+  forecastText: string;
+  skill: string | null;
+  area: string | null;
+  weekStart: string;
+}
+
+export const adminAnalyticsQuery = async (): Promise<{
+  skillDistribution: SkillDistribution[];
+  monthlyVolume: MonthlyVolume[];
+}> => {
+  const query = `
+    query AdminAnalytics {
+      adminCategoryDistribution { name value }
+      adminRevenueChart { month bookings revenue }
+    }
+  `;
+  const result = await makeGraphQLRequest<{
+    adminCategoryDistribution: SkillDistribution[];
+    adminRevenueChart: MonthlyVolume[];
+  }>(query);
+  return {
+    skillDistribution: result.adminCategoryDistribution ?? [],
+    monthlyVolume: result.adminRevenueChart ?? [],
+  };
+};
+
+export const adminDemandForecastQuery = async (): Promise<DemandForecastItem[]> => {
+  const query = `
+    query AdminDemandForecast {
+      getDemandForecast(limit: 30) {
+        id forecastText skill area weekStart
+      }
+    }
+  `;
+  const result = await makeGraphQLRequest<{ getDemandForecast: DemandForecastItem[] }>(query);
+  return result.getDemandForecast ?? [];
+};
+
 // ── Audit logs ───────────────────────────────────────────────────────────────
 export interface AdminAuditLog {
   id: string;
