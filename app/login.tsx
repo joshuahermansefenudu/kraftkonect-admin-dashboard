@@ -212,23 +212,4 @@ const styles = StyleSheet.create({
     color: Colors.light.error,
     textAlign: "center",
   },
-  demoCredentials: {
-    marginTop: 32,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
-    gap: 8,
-  },
-  demoTitle: {
-    fontSize: 13,
-    fontWeight: "600" as const,
-    color: Colors.light.text,
-    textAlign: "center",
-  },
-  demoText: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    textAlign: "center",
-    fontFamily: Platform.select({ ios: "Menlo", android: "monospace", web: "monospace" }),
-  },
 });

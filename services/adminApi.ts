@@ -8,7 +8,9 @@ import {
 } from "@/types/admin";
 import { paginateData } from "@/mocks/users";
 
-const API_BASE_URL = "https://artisanhubb-backend.onrender.com/graphql";
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ??
+  "https://artisanhubb-backend.onrender.com/graphql";
 const USE_MOCK_DATA = false;
 
 // ── Token management ─────────────────────────────────────────────────────────
@@ -79,6 +81,28 @@ export const adminLoginApi = async (
   `;
   const result = await makeGraphQLRequest<{ adminLogin: any }>(mutation, { email, password });
   return result.adminLogin;
+};
+
+// Validates the stored access token by calling the `me` query.
+// Throws if the token is expired or invalid.
+export const adminValidateSessionApi = async (): Promise<{
+  email: string;
+  name: string | null;
+  role: string;
+}> => {
+  const query = `
+    query Me {
+      me {
+        id
+        email
+        name
+        role
+      }
+    }
+  `;
+  const result = await makeGraphQLRequest<{ me: any }>(query);
+  if (!result.me) throw new Error("Session invalid");
+  return result.me;
 };
 
 // ── Users ────────────────────────────────────────────────────────────────────
