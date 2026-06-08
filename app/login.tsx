@@ -67,7 +67,7 @@ export default function LoginScreen() {
 
       <Text style={styles.title}>Admin Login</Text>
       <Text style={styles.subtitle}>
-        Sign in to access the KraftKonect admin dashboard
+        Sign in to access the KraftKonectAdmin dashboard
       </Text>
 
       <View style={styles.form}>
@@ -270,7 +270,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: Colors.light.text,
-    outlineStyle: "none" as const,
+    ...Platform.select({
+      web: {
+        outlineStyle: "none",
+      },
+    }) as any,
   },
   button: {
     backgroundColor: Colors.light.primary,
