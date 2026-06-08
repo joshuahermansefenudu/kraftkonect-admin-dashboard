@@ -95,32 +95,54 @@ export const adminUsersQuery = async (params: {
     };
   }
 
+  // Backend returns [User!]! — fetch all and paginate client-side
+  const limit = 500;
+  const offset = ((params.page || 1) - 1) * (params.pageSize || 20);
+
   const query = `
-    query AdminUsers($role: UserRole, $status: UserStatus, $search: String, $page: Int, $pageSize: Int) {
-      adminUsers(role: $role, status: $status, search: $search, page: $page, pageSize: $pageSize) {
-        users {
-          id
-          name
-          email
-          phone
-          role
-          status
-          createdAt
-          providerId
-        }
-        total
-        page
-        pageSize
-        totalPages
+    query AdminUsers($limit: Int, $offset: Int, $role: UserRole) {
+      adminUsers(limit: $limit, offset: $offset, role: $role) {
+        id
+        name
+        email
+        phone
+        role
+        status
+        createdAt
+        deletedAt
       }
     }
   `;
 
-  const result = await makeGraphQLRequest<{ adminUsers: AdminUsersResponse }>(
-    query,
-    params
-  );
-  return result.adminUsers;
+  const result = await makeGraphQLRequest<{ adminUsers: User[] }>(query, {
+    limit,
+    offset: 0,
+    role: params.role,
+  });
+
+  // Client-side filter for status and search (backend doesn't support these yet)
+  let filtered = result.adminUsers;
+  if (params.status) filtered = filtered.filter((u) => u.status === params.status);
+  if (params.search) {
+    const q = params.search.toLowerCase();
+    filtered = filtered.filter(
+      (u) =>
+        u.name?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q) ||
+        u.phone?.toLowerCase().includes(q)
+    );
+  }
+
+  const page = params.page || 1;
+  const pageSize = params.pageSize || 20;
+  const paginated = paginateData(filtered, page, pageSize);
+  return {
+    users: paginated.data,
+    total: paginated.total,
+    page: paginated.page,
+    pageSize: paginated.pageSize,
+    totalPages: paginated.totalPages,
+  };
 };
 
 export const adminProvidersQuery = async (params: {
@@ -153,44 +175,53 @@ export const adminProvidersQuery = async (params: {
     };
   }
 
+  // Backend returns [Provider!]! — fetch all and paginate client-side
   const query = `
-    query AdminProviders($status: ProviderStatus, $search: String, $page: Int, $pageSize: Int) {
-      adminProviders(status: $status, search: $search, page: $page, pageSize: $pageSize) {
-        providers {
-          id
-          name
-          email
-          phone
-          category
-          location
-          status
-          submittedAt
-          approvedAt
-          documents
-          businessName
-          serviceArea
-          description
-          rating
-          bookingsCount
-          verificationDetails {
-            idType
-            idNumber
-            businessAddress
-            taxId
-          }
-        }
-        total
-        page
-        pageSize
-        totalPages
+    query AdminProviders($limit: Int, $offset: Int, $status: ProviderStatus) {
+      adminProviders(limit: $limit, offset: $offset, status: $status) {
+        id
+        name
+        status
+        category
+        categories
+        bio
+        rating
+        ratingCount
+        verified
+        createdAt
+        serviceAreas
+        avatar
+        experience
       }
     }
   `;
 
-  const result = await makeGraphQLRequest<{
-    adminProviders: AdminProvidersResponse;
-  }>(query, params);
-  return result.adminProviders;
+  const result = await makeGraphQLRequest<{ adminProviders: Provider[] }>(
+    query,
+    { limit: 500, offset: 0, status: params.status }
+  );
+
+  // Client-side search (backend doesn't support it yet)
+  let filtered = result.adminProviders;
+  if (params.search) {
+    const q = params.search.toLowerCase();
+    filtered = filtered.filter(
+      (p) =>
+        p.name?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q)
+    );
+  }
+
+  const page = params.page || 1;
+  const pageSize = params.pageSize || 20;
+  const paginated = paginateData(filtered, page, pageSize);
+  return {
+    providers: paginated.data,
+    total: paginated.total,
+    page: paginated.page,
+    pageSize: paginated.pageSize,
+    totalPages: paginated.totalPages,
+  };
 };
 
 export const adminUpdateUserRole = async (
@@ -334,13 +365,14 @@ export const adminApproveProvider = async (
     return updatedProvider;
   }
 
+  // approvedAt does not exist on the Provider type — removed
   const mutation = `
     mutation AdminApproveProvider($providerId: ID!) {
       adminApproveProvider(providerId: $providerId) {
         id
         name
         status
-        approvedAt
+        verified
       }
     }
   `;
@@ -425,9 +457,10 @@ export const adminUpdateProviderStatus = async (
     return updatedProvider;
   }
 
+  // Backend adminUpdateProviderStatus does not accept a reason argument
   const mutation = `
-    mutation AdminUpdateProviderStatus($providerId: ID!, $status: ProviderStatus!, $reason: String) {
-      adminUpdateProviderStatus(providerId: $providerId, status: $status, reason: $reason) {
+    mutation AdminUpdateProviderStatus($providerId: ID!, $status: ProviderStatus!) {
+      adminUpdateProviderStatus(providerId: $providerId, status: $status) {
         id
         name
         status
@@ -437,7 +470,7 @@ export const adminUpdateProviderStatus = async (
 
   const result = await makeGraphQLRequest<{
     adminUpdateProviderStatus: Provider;
-  }>(mutation, { providerId, status, reason });
+  }>(mutation, { providerId, status });
   console.log(
     `[AdminAPI] Updated provider ${providerId} status to ${status} with reason: ${reason}`
   );
@@ -466,25 +499,24 @@ export const updateProvider = async (
     return updatedProvider;
   }
 
+  // Backend arg is `id` (not `providerId`); UpdateProviderInput only accepts status/category/bio
+  // location, businessName, serviceArea, email, phone do not exist on Provider type
   const mutation = `
-    mutation UpdateProvider($providerId: ID!, $input: ProviderUpdateInput!) {
-      updateProvider(providerId: $providerId, input: $input) {
+    mutation UpdateProvider($id: ID!, $input: UpdateProviderInput!) {
+      updateProvider(id: $id, input: $input) {
         id
         name
-        email
-        phone
+        status
         category
-        location
-        businessName
-        serviceArea
-        description
+        bio
+        verified
       }
     }
   `;
 
   const result = await makeGraphQLRequest<{ updateProvider: Provider }>(
     mutation,
-    { providerId, input }
+    { id: providerId, input }
   );
   console.log(`[AdminAPI] Updated provider ${providerId} profile`);
   return result.updateProvider;
