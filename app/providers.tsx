@@ -12,12 +12,24 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
-import { CheckCircle, XCircle, FileText, Mail, Phone, MapPin, X, Download } from "lucide-react-native";
+import {
+  CheckCircle,
+  XCircle,
+  FileText,
+  Mail,
+  Phone,
+  MapPin,
+  X,
+  Download,
+  RefreshCw,
+  AlertTriangle,
+} from "lucide-react-native";
 import { useState, useEffect } from "react";
 import {
   adminProvidersQuery,
   adminApproveProvider,
   adminRejectProvider,
+  adminAiPreScreenApi,
   BackendProvider,
 } from "@/services/adminApi";
 
@@ -143,6 +155,26 @@ export default function ProviderApprovalsScreen() {
                   onApprove={() => handleAction(provider, "approve")}
                   onReject={() => handleAction(provider, "reject")}
                   onDocumentPress={(docName) => setViewingDocument({ name: docName, provider: provider.name })}
+                  onRerunAi={async () => {
+                    try {
+                      const updated = await adminAiPreScreenApi(provider.id);
+                      setProviders((prev) =>
+                        prev.map((p) =>
+                          p.id === provider.id
+                            ? {
+                                ...p,
+                                aiPhotoQuality: updated.aiPhotoQuality,
+                                aiIdReadable: updated.aiIdReadable,
+                                aiFaceMatch: updated.aiFaceMatch,
+                                aiDuplicateFlag: updated.aiDuplicateFlag,
+                              }
+                            : p
+                        )
+                      );
+                    } catch {
+                      Alert.alert("Error", "AI re-check failed. Please try again.");
+                    }
+                  }}
                 />
               ))}
             </View>
@@ -316,16 +348,120 @@ function DocumentViewerModal({
   );
 }
 
+// ── AI verdict helpers ────────────────────────────────────────────────────────
+
+function AiCheckBadge({
+  label,
+  value,
+}: {
+  label: string;
+  value: boolean | null;
+}) {
+  const isPending = value === null;
+  const passed = value === true;
+
+  const bg = isPending
+    ? "#F3F4F6"
+    : passed
+    ? `${Colors.light.success}18`
+    : `${Colors.light.error}18`;
+
+  const textColor = isPending
+    ? Colors.light.textSecondary
+    : passed
+    ? Colors.light.success
+    : Colors.light.error;
+
+  const icon = isPending ? "·" : passed ? "✓" : "✗";
+
+  return (
+    <View style={[styles.aiBadge, { backgroundColor: bg }]}>
+      <Text style={[styles.aiBadgeIcon, { color: textColor }]}>{icon}</Text>
+      <Text style={[styles.aiBadgeLabel, { color: textColor }]}>{label}</Text>
+    </View>
+  );
+}
+
+function AiPreScreenPanel({
+  provider,
+  onRerunAi,
+}: {
+  provider: Provider;
+  onRerunAi: () => Promise<void>;
+}) {
+  const [rerunLoading, setRerunLoading] = useState(false);
+
+  const allNull =
+    provider.aiPhotoQuality === null &&
+    provider.aiIdReadable === null &&
+    provider.aiFaceMatch === null &&
+    provider.aiDuplicateFlag === null;
+
+  const handleRerun = async () => {
+    setRerunLoading(true);
+    await onRerunAi();
+    setRerunLoading(false);
+  };
+
+  return (
+    <View style={styles.aiPanel}>
+      <View style={styles.aiPanelHeader}>
+        <Text style={styles.aiPanelTitle}>AI Pre-Screen</Text>
+        <TouchableOpacity
+          style={[styles.aiRerunButton, rerunLoading && { opacity: 0.5 }]}
+          onPress={handleRerun}
+          disabled={rerunLoading}
+          activeOpacity={0.7}
+        >
+          {rerunLoading ? (
+            <ActivityIndicator size="small" color={Colors.light.primary} />
+          ) : (
+            <>
+              <RefreshCw size={13} color={Colors.light.primary} strokeWidth={2.5} />
+              <Text style={styles.aiRerunText}>Re-run</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {allNull ? (
+        <View style={styles.aiPendingBadge}>
+          <Text style={styles.aiPendingText}>AI check pending</Text>
+        </View>
+      ) : (
+        <View style={styles.aiBadgesRow}>
+          <AiCheckBadge label="Photo quality" value={provider.aiPhotoQuality} />
+          <AiCheckBadge label="ID readable" value={provider.aiIdReadable} />
+          <AiCheckBadge label="Face match" value={provider.aiFaceMatch} />
+        </View>
+      )}
+
+      {provider.aiDuplicateFlag === true && (
+        <View style={styles.aiDuplicateWarning}>
+          <AlertTriangle size={14} color="#92400E" strokeWidth={2} />
+          <Text style={styles.aiDuplicateText}>
+            Possible duplicate — another provider with this name exists
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── Provider card ─────────────────────────────────────────────────────────────
+
 function ProviderCard({
   provider,
   onApprove,
   onReject,
   onDocumentPress,
+  onRerunAi,
 }: {
   provider: Provider;
   onApprove: () => void;
   onReject: () => void;
   onDocumentPress: (docName: string) => void;
+  onRerunAi: () => Promise<void>;
 }) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -333,10 +469,7 @@ function ProviderCard({
     const diff = now.getTime() - date.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(hours / 24);
-
-    if (hours < 24) {
-      return `${hours}h ago`;
-    }
+    if (hours < 24) return `${hours}h ago`;
     return `${days}d ago`;
   };
 
@@ -378,6 +511,9 @@ function ProviderCard({
           <Text style={styles.contactText}>{provider.location}</Text>
         </View>
       </View>
+
+      {/* AI pre-screen verdict */}
+      <AiPreScreenPanel provider={provider} onRerunAi={onRerunAi} />
 
       <View style={styles.documentsSection}>
         <Text style={styles.documentsTitle}>Submitted Documents</Text>
@@ -531,6 +667,94 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     flex: 1,
   },
+  // AI panel
+  aiPanel: {
+    backgroundColor: "#F8FAFF",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E0E7FF",
+  },
+  aiPanelHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  aiPanelTitle: {
+    fontSize: 13,
+    fontWeight: "700" as const,
+    color: Colors.light.textSecondary,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
+  },
+  aiRerunButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: `${Colors.light.primary}12`,
+  },
+  aiRerunText: {
+    fontSize: 12,
+    fontWeight: "600" as const,
+    color: Colors.light.primary,
+  },
+  aiBadgesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  aiBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  aiBadgeIcon: {
+    fontSize: 13,
+    fontWeight: "700" as const,
+  },
+  aiBadgeLabel: {
+    fontSize: 12,
+    fontWeight: "500" as const,
+  },
+  aiPendingBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  aiPendingText: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    fontWeight: "500" as const,
+  },
+  aiDuplicateWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    backgroundColor: "#FFFBEB",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+  },
+  aiDuplicateText: {
+    fontSize: 12,
+    color: "#92400E",
+    fontWeight: "500" as const,
+    flex: 1,
+  },
+
   documentsSection: {
     marginBottom: 16,
   },

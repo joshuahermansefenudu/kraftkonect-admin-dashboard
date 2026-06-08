@@ -202,6 +202,11 @@ export interface BackendProvider {
   documents: string[];
   bio?: string;
   rating?: number;
+  // AI pre-screen fields (null = check not yet run)
+  aiPhotoQuality: boolean | null;
+  aiIdReadable: boolean | null;
+  aiFaceMatch: boolean | null;
+  aiDuplicateFlag: boolean | null;
 }
 
 export const adminProvidersQuery = async (params: {
@@ -225,6 +230,10 @@ export const adminProvidersQuery = async (params: {
         serviceAreas
         avatar
         experience
+        aiPhotoQuality
+        aiIdReadable
+        aiFaceMatch
+        aiDuplicateFlag
         user {
           email
           phone
@@ -251,6 +260,10 @@ export const adminProvidersQuery = async (params: {
     documents: ["ID Document", "Selfie"],
     bio: p.bio || "",
     rating: p.rating ? parseFloat(p.rating) : undefined,
+    aiPhotoQuality: p.aiPhotoQuality ?? null,
+    aiIdReadable: p.aiIdReadable ?? null,
+    aiFaceMatch: p.aiFaceMatch ?? null,
+    aiDuplicateFlag: p.aiDuplicateFlag ?? null,
   }));
 
   let filtered = mapped;
@@ -313,6 +326,39 @@ export const adminUpdateProviderStatus = async (
   `;
   const result = await makeGraphQLRequest<{ adminUpdateProviderStatus: any }>(mutation, { providerId, status });
   return result.adminUpdateProviderStatus;
+};
+
+export const adminAiPreScreenApi = async (providerId: string): Promise<BackendProvider> => {
+  const mutation = `
+    mutation AiPreScreen($providerId: ID!) {
+      aiPreScreen(providerId: $providerId) {
+        id
+        name
+        status
+        aiPhotoQuality
+        aiIdReadable
+        aiFaceMatch
+        aiDuplicateFlag
+      }
+    }
+  `;
+  const result = await makeGraphQLRequest<{ aiPreScreen: any }>(mutation, { providerId });
+  const p = result.aiPreScreen;
+  return {
+    id: p.id,
+    name: p.name || "Unknown",
+    email: "",
+    phone: "",
+    category: "",
+    location: "",
+    status: p.status,
+    submittedAt: "",
+    documents: [],
+    aiPhotoQuality: p.aiPhotoQuality ?? null,
+    aiIdReadable: p.aiIdReadable ?? null,
+    aiFaceMatch: p.aiFaceMatch ?? null,
+    aiDuplicateFlag: p.aiDuplicateFlag ?? null,
+  };
 };
 
 // ── Dashboard metrics ────────────────────────────────────────────────────────
