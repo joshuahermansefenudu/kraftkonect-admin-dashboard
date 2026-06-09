@@ -1,12 +1,6 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  Modal,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-} from "react-native";
+import { StyleSheet, Text, View, Modal,  } from "react-native";
+import { Button } from "./Button";
+import { Input } from "./Input";
 import { AlertCircle } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { useState } from "react";
@@ -97,8 +91,7 @@ export default function ConfirmModal({
                 Type <Text style={styles.inputLabelBold}>{confirmationValue}</Text>{" "}
                 to confirm:
               </Text>
-              <TextInput
-                style={styles.input}
+              <Input
                 value={typedValue}
                 onChangeText={setTypedValue}
                 placeholder={confirmationValue}
@@ -109,29 +102,21 @@ export default function ConfirmModal({
           )}
 
           <View style={styles.buttons}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
+            <Button
+              title={cancelText}
+              variant="outline"
+              style={{ flex: 1, borderWidth: 1, borderColor: Colors.light.border, height: 48 }}
+              textStyle={{ color: Colors.light.text, fontSize: 15 }}
               onPress={handleCancel}
               disabled={isLoading}
-            >
-              <Text style={styles.cancelButtonText}>{cancelText}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.confirmButton,
-                { backgroundColor: getConfirmButtonColor() },
-                (isConfirmDisabled || isLoading) && styles.confirmButtonDisabled,
-              ]}
+            />
+            <Button
+              title={confirmText}
+              style={{ flex: 1, height: 48, backgroundColor: getConfirmButtonColor(), borderColor: getConfirmButtonColor() }}
               onPress={handleConfirm}
-              disabled={isConfirmDisabled || isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.confirmButtonText}>{confirmText}</Text>
-              )}
-            </TouchableOpacity>
+              disabled={isConfirmDisabled}
+              loading={isLoading}
+            />
           </View>
         </View>
       </View>

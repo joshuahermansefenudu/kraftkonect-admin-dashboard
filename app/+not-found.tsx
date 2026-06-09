@@ -1,5 +1,6 @@
 import { useRouter, Stack } from "expo-router";
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import Colors from "@/constants/colors";
 
 export default function NotFoundScreen() {

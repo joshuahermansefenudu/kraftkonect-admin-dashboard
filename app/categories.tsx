@@ -1,18 +1,7 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  Modal,
-  Switch,
-  useWindowDimensions,
-  Image,
-  Platform,
-  ActivityIndicator,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, Alert, Modal, Switch, useWindowDimensions, Image, Platform, ActivityIndicator } from "react-native";
+import { Button } from "@/components/Button";
+import { Input } from "@/components/Input";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
@@ -220,13 +209,12 @@ export default function CategoriesScreen() {
                 Manage service categories and featured providers
               </Text>
             </View>
-            <TouchableOpacity
-              style={[styles.addButton, isMobile && styles.addButtonMobile]}
+            <Button
+              title="Add Category"
               onPress={handleAddCategory}
-            >
-              <Plus size={18} color="#FFFFFF" />
-              <Text style={styles.addButtonText}>Add Category</Text>
-            </TouchableOpacity>
+              icon={<Plus size={18} color="#FFFFFF" />}
+              style={isMobile ? { height: 48, paddingHorizontal: 16 } : undefined}
+            />
           </View>
 
           {loading && (
@@ -278,18 +266,15 @@ export default function CategoriesScreen() {
               {editingCategory ? "Edit Category" : "Add New Category"}
             </Text>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Category Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., Plumbing"
-                placeholderTextColor={Colors.light.textSecondary}
-                value={formData.name}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, name: text })
-                }
-              />
-            </View>
+            <Input
+              label="Category Name"
+              placeholder="e.g., Plumbing"
+              value={formData.name}
+              onChangeText={(text) =>
+                setFormData({ ...formData, name: text })
+              }
+              containerStyle={{ marginBottom: 20 }}
+            />
 
             <View style={styles.formGroup}>
               <Text style={styles.label}>Icon</Text>
@@ -313,15 +298,14 @@ export default function CategoriesScreen() {
                   </View>
                 )}
                 <View style={styles.iconUploadActions}>
-                  <TouchableOpacity
-                    style={styles.uploadButton}
+                  <Button
+                    title={formData.iconUri ? "Change Icon" : "Upload Icon"}
+                    variant="outline"
                     onPress={handlePickImage}
-                  >
-                    <Upload size={18} color={Colors.light.primary} />
-                    <Text style={styles.uploadButtonText}>
-                      {formData.iconUri ? "Change Icon" : "Upload Icon"}
-                    </Text>
-                  </TouchableOpacity>
+                    icon={<Upload size={18} color={Colors.light.primary} />}
+                    style={{ height: 44 }}
+                    textStyle={{ fontSize: 14 }}
+                  />
                   <Text style={styles.uploadHint}>
                     Recommended: Square image, 512x512px or larger
                   </Text>
@@ -329,20 +313,19 @@ export default function CategoriesScreen() {
               </View>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Description</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Brief description of the category"
-                placeholderTextColor={Colors.light.textSecondary}
-                value={formData.description}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, description: text })
-                }
-                multiline
-                numberOfLines={3}
-              />
-            </View>
+            <Input
+              label="Description"
+              placeholder="Brief description of the category"
+              value={formData.description}
+              onChangeText={(text) =>
+                setFormData({ ...formData, description: text })
+              }
+              multiline
+              numberOfLines={3}
+              style={{ minHeight: 80, borderRadius: 20 }}
+              inputStyle={{ textAlignVertical: "top", paddingTop: 10 }}
+              containerStyle={{ marginBottom: 20 }}
+            />
 
             <View style={styles.formGroup}>
               <View style={styles.switchRow}>
@@ -362,25 +345,19 @@ export default function CategoriesScreen() {
             </View>
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSecondary]}
+              <Button
+                title="Cancel"
+                variant="outline"
+                style={{ flex: 1, borderWidth: 1, borderColor: Colors.light.border, height: 48 }}
+                textStyle={{ color: Colors.light.text, fontSize: 15 }}
                 onPress={() => setShowModal(false)}
-              >
-                <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, saveLoading && { opacity: 0.6 }]}
+              />
+              <Button
+                title={editingCategory ? "Update" : "Create"}
                 onPress={handleSaveCategory}
-                disabled={saveLoading}
-              >
-                {saveLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.modalButtonText}>
-                    {editingCategory ? "Update" : "Create"}
-                  </Text>
-                )}
-              </TouchableOpacity>
+                loading={saveLoading}
+                style={{ flex: 1, height: 48 }}
+              />
             </View>
           </View>
         </View>
@@ -704,7 +681,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: Colors.light.text,
-    outlineStyle: "none",
+    outlineStyle: "none" as any,
   },
   textArea: {
     height: 80,

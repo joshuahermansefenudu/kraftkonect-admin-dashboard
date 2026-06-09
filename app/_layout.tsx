@@ -8,6 +8,10 @@ import { PersistGate } from "redux-persist/integration/react";
 import { store, persistor } from "@/store";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ActivityIndicator, View } from "react-native";
+import { useFonts } from "expo-font";
+import { interFontMap, applyGlobalInterFont } from "@/lib/fonts";
+
+applyGlobalInterFont();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -56,9 +60,21 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts(interFontMap);
+
   useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#2563EB" />
+      </View>
+    );
+  }
 
   return (
     <Provider store={store}>

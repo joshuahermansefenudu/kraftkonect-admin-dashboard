@@ -1,12 +1,6 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  Modal,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-} from "react-native";
+import { StyleSheet, Text, View, Modal,  } from "react-native";
+import { Button } from "./Button";
+import { Input } from "./Input";
 import { MessageSquare } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { useState } from "react";
@@ -73,15 +67,15 @@ export default function ReasonModal({
           <Text style={styles.message}>{message}</Text>
 
           <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textarea}
+            <Input
               value={reason}
               onChangeText={setReason}
               placeholder={placeholder}
               multiline
               numberOfLines={4}
-              textAlignVertical="top"
               editable={!isLoading}
+              style={{ minHeight: 100, borderRadius: 20 }}
+              inputStyle={{ textAlignVertical: "top", paddingTop: 10 }}
             />
             {isRequired && (
               <Text style={styles.requiredText}>* Required field</Text>
@@ -89,28 +83,21 @@ export default function ReasonModal({
           </View>
 
           <View style={styles.buttons}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
+            <Button
+              title={cancelText}
+              variant="outline"
+              style={{ flex: 1, borderWidth: 1, borderColor: Colors.light.border, height: 48 }}
+              textStyle={{ color: Colors.light.text, fontSize: 15 }}
               onPress={handleCancel}
               disabled={isLoading}
-            >
-              <Text style={styles.cancelButtonText}>{cancelText}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.confirmButton,
-                (isConfirmDisabled || isLoading) && styles.confirmButtonDisabled,
-              ]}
+            />
+            <Button
+              title={confirmText}
+              style={{ flex: 1, height: 48 }}
               onPress={handleConfirm}
-              disabled={isConfirmDisabled || isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.confirmButtonText}>{confirmText}</Text>
-              )}
-            </TouchableOpacity>
+              disabled={isConfirmDisabled}
+              loading={isLoading}
+            />
           </View>
         </View>
       </View>

@@ -1,18 +1,10 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  Modal,
-  useWindowDimensions,
-  ActivityIndicator,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, Alert, Modal, useWindowDimensions, ActivityIndicator,  } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
+import { Input } from "@/components/Input";
+import { Button } from "@/components/Button";
 import { Search, Eye, X, DollarSign } from "lucide-react-native";
 import { useState, useEffect } from "react";
 import {
@@ -89,16 +81,13 @@ export default function BookingManagementScreen() {
             </View>
           )}
 
-          <View style={styles.searchBar}>
-            <Search size={20} color={Colors.light.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search bookings..."
-              placeholderTextColor={Colors.light.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
+          <Input
+            placeholder="Search bookings..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            icon={<Search size={20} color={Colors.light.textSecondary} />}
+            containerStyle={{ marginBottom: 24 }}
+          />
 
           {loading ? (
             <View style={{ padding: 40, alignItems: "center" }}>
@@ -220,8 +209,8 @@ export default function BookingManagementScreen() {
                   selectedBooking.status !== "completed" &&
                   selectedBooking.status !== "refunded" && (
                     <View style={styles.actionSection}>
-                      <TouchableOpacity
-                        style={styles.cancelButton}
+                      <Button
+                        title="Cancel & Refund"
                         onPress={() => {
                           setShowDetailsModal(false);
                           setTimeout(() => {
@@ -229,9 +218,8 @@ export default function BookingManagementScreen() {
                             setShowCancelModal(true);
                           }, 300);
                         }}
-                      >
-                        <Text style={styles.cancelButtonText}>Cancel & Refund</Text>
-                      </TouchableOpacity>
+                        style={{ backgroundColor: Colors.light.error }}
+                      />
                     </View>
                   )}
               </ScrollView>
@@ -256,36 +244,27 @@ export default function BookingManagementScreen() {
             {selectedBooking && (
               <View style={styles.refundSection}>
                 <Text style={styles.refundLabel}>Booking: {selectedBooking.id}</Text>
-                <View style={styles.refundInputContainer}>
-                  <DollarSign size={20} color={Colors.light.textSecondary} />
-                  <TextInput
-                    style={styles.refundInput}
-                    placeholder="Refund amount"
-                    placeholderTextColor={Colors.light.textSecondary}
-                    value={refundAmount}
-                    onChangeText={setRefundAmount}
-                    keyboardType="decimal-pad"
-                  />
-                </View>
+                <Input
+                  placeholder="Refund amount"
+                  value={refundAmount}
+                  onChangeText={setRefundAmount}
+                  keyboardType="decimal-pad"
+                  icon={<DollarSign size={20} color={Colors.light.textSecondary} />}
+                />
               </View>
             )}
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSecondary]}
+              <Button
+                title="Cancel"
+                variant="secondary"
                 onPress={() => setShowCancelModal(false)}
-              >
-                <Text
-                  style={[
-                    styles.modalButtonSecondaryText,
-                    isMobile && styles.modalButtonTextMobile,
-                  ]}
-                >
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelConfirmButton, cancelLoading && { opacity: 0.6 }]}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Confirm Cancellation"
+                variant="primary"
+                loading={cancelLoading}
                 disabled={cancelLoading}
                 onPress={async () => {
                   if (!selectedBooking) return;
@@ -306,16 +285,8 @@ export default function BookingManagementScreen() {
                     setRefundAmount("");
                   }
                 }}
-              >
-                <Text
-                  style={[
-                    styles.modalButtonText,
-                    isMobile && styles.modalButtonTextMobile,
-                  ]}
-                >
-                  Confirm Cancellation
-                </Text>
-              </TouchableOpacity>
+                style={{ flex: 1, backgroundColor: Colors.light.error }}
+              />
             </View>
           </View>
         </View>
@@ -572,7 +543,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: Colors.light.text,
-    outlineStyle: "none",
+    outlineStyle: "none" as any,
   },
   cardsList: {
     gap: 12,
@@ -833,7 +804,7 @@ const styles = StyleSheet.create({
     fontWeight: "600" as const,
     color: Colors.light.text,
     paddingVertical: 12,
-    outlineStyle: "none",
+    outlineStyle: "none" as any,
   },
   modalButtons: {
     flexDirection: "row",

@@ -1,19 +1,9 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  Modal,
-  useWindowDimensions,
-  ActivityIndicator,
-  Image,
-  Linking,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, Alert, Modal, useWindowDimensions, ActivityIndicator, Image, Linking,  } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
+import { Button } from "@/components/Button";
 import {
   CheckCircle,
   XCircle,
@@ -136,9 +126,11 @@ export default function ProviderApprovalsScreen() {
           ) : error ? (
             <View style={{ padding: 24, backgroundColor: `${Colors.light.error}10`, borderRadius: 8 }}>
               <Text style={{ color: Colors.light.error, marginBottom: 12 }}>{error}</Text>
-              <TouchableOpacity onPress={loadProviders} style={{ backgroundColor: Colors.light.primary, padding: 10, borderRadius: 6, alignSelf: "flex-start" }}>
-                <Text style={{ color: "#fff", fontWeight: "600" }}>Retry</Text>
-              </TouchableOpacity>
+              <Button
+                title="Retry"
+                onPress={loadProviders}
+                style={{ alignSelf: "flex-start" }}
+              />
             </View>
           ) : pendingProviders.length === 0 ? (
             <View style={styles.emptyState}>
@@ -212,31 +204,23 @@ export default function ProviderApprovalsScreen() {
               </View>
             )}
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSecondary]}
+              <Button
+                title="Cancel"
+                variant="secondary"
                 onPress={() => setShowModal(false)}
-              >
-                <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.modalButton,
-                  actionType === "approve"
-                    ? styles.approveButton
-                    : styles.rejectButton,
-                  actionLoading && { opacity: 0.6 },
-                ]}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title={actionType === "approve" ? "Approve" : "Reject"}
+                variant="primary"
                 onPress={confirmAction}
                 disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.modalButtonText}>
-                    {actionType === "approve" ? "Approve" : "Reject"}
-                  </Text>
-                )}
-              </TouchableOpacity>
+                loading={actionLoading}
+                style={{
+                  flex: 1,
+                  backgroundColor: actionType === "approve" ? Colors.light.success : Colors.light.error,
+                }}
+              />
             </View>
           </View>
         </View>
@@ -302,13 +286,12 @@ function DocumentViewerModal({
           </ScrollView>
 
           <View style={styles.documentModalFooter}>
-            <TouchableOpacity
-              style={styles.downloadButton}
+            <Button
+              title="Open Full Size"
+              icon={<Download size={18} color="#FFFFFF" />}
               onPress={handleOpenExternal}
-            >
-              <Download size={18} color="#FFFFFF" />
-              <Text style={styles.downloadButtonText}>Open Full Size</Text>
-            </TouchableOpacity>
+              style={{ width: "100%" }}
+            />
           </View>
         </View>
       </View>
@@ -375,21 +358,16 @@ function AiPreScreenPanel({
     <View style={styles.aiPanel}>
       <View style={styles.aiPanelHeader}>
         <Text style={styles.aiPanelTitle}>AI Pre-Screen</Text>
-        <TouchableOpacity
-          style={[styles.aiRerunButton, rerunLoading && { opacity: 0.5 }]}
+        <Button
+          title="Re-run"
+          variant="secondary"
+          icon={<RefreshCw size={13} color={Colors.light.primary} strokeWidth={2.5} />}
           onPress={handleRerun}
           disabled={rerunLoading}
-          activeOpacity={0.7}
-        >
-          {rerunLoading ? (
-            <ActivityIndicator size="small" color={Colors.light.primary} />
-          ) : (
-            <>
-              <RefreshCw size={13} color={Colors.light.primary} strokeWidth={2.5} />
-              <Text style={styles.aiRerunText}>Re-run</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          loading={rerunLoading}
+          style={{ height: 32, borderRadius: 16, paddingHorizontal: 10 }}
+          textStyle={{ fontSize: 12, color: Colors.light.primary }}
+        />
       </View>
 
       {allNull ? (
@@ -505,14 +483,20 @@ function ProviderCard({
       </View>
 
       <View style={styles.actionsRow}>
-        <TouchableOpacity style={styles.rejectButtonAction} onPress={onReject}>
-          <XCircle size={18} color="#FFFFFF" />
-          <Text style={styles.actionButtonText}>Reject</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.approveButtonAction} onPress={onApprove}>
-          <CheckCircle size={18} color="#FFFFFF" />
-          <Text style={styles.actionButtonText}>Approve</Text>
-        </TouchableOpacity>
+        <Button
+          title="Reject"
+          variant="primary"
+          icon={<XCircle size={18} color="#FFFFFF" />}
+          onPress={onReject}
+          style={{ flex: 1, backgroundColor: Colors.light.error }}
+        />
+        <Button
+          title="Approve"
+          variant="primary"
+          icon={<CheckCircle size={18} color="#FFFFFF" />}
+          onPress={onApprove}
+          style={{ flex: 1, backgroundColor: Colors.light.success }}
+        />
       </View>
     </View>
   );

@@ -1,14 +1,5 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  useWindowDimensions,
-  Modal,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, useWindowDimensions, Modal, ActivityIndicator, Alert,  } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";

@@ -1,16 +1,10 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  useWindowDimensions,
-  ActivityIndicator,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, useWindowDimensions, ActivityIndicator,  } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
+import { Input } from "@/components/Input";
+import { Button } from "@/components/Button";
 import { Search, FileText, Download } from "lucide-react-native";
 import { useState, useEffect } from "react";
 import { adminAuditLogsQuery, AdminAuditLog as AuditLog } from "@/services/adminApi";
@@ -81,10 +75,11 @@ export default function AuditLogsScreen() {
                 View all admin actions and system events
               </Text>
             </View>
-            <TouchableOpacity style={styles.exportButton} onPress={handleExportLogs}>
-              <Download size={18} color="#FFFFFF" />
-              <Text style={styles.exportButtonText}>Export Logs</Text>
-            </TouchableOpacity>
+            <Button
+              title="Export Logs"
+              icon={<Download size={18} color="#FFFFFF" />}
+              onPress={handleExportLogs}
+            />
           </View>
 
           {loading && (
@@ -102,16 +97,13 @@ export default function AuditLogsScreen() {
             </View>
           )}
 
-          <View style={styles.searchBar}>
-            <Search size={20} color={Colors.light.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search logs by admin, action, resource..."
-              placeholderTextColor={Colors.light.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
+          <Input
+            placeholder="Search logs by admin, action, resource..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            icon={<Search size={20} color={Colors.light.textSecondary} />}
+            containerStyle={{ marginBottom: 24 }}
+          />
 
           <View style={styles.filtersRow}>
             <View style={styles.filterGroup}>
@@ -218,19 +210,19 @@ function FilterButton({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
-      style={[styles.filterButton, isActive && styles.filterButtonActive]}
+    <Button
+      title={label}
+      variant={isActive ? "primary" : "secondary"}
       onPress={onPress}
-    >
-      <Text
-        style={[
-          styles.filterButtonText,
-          isActive && styles.filterButtonTextActive,
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
+      style={{
+        height: 36,
+        borderRadius: 18,
+        paddingHorizontal: 16,
+      }}
+      textStyle={{
+        fontSize: 13,
+      }}
+    />
   );
 }
 
@@ -376,7 +368,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: Colors.light.text,
-    outlineStyle: "none",
+    outlineStyle: "none" as any,
   },
   filtersRow: {
     gap: 20,

@@ -1,20 +1,13 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-  Alert,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Alert, useWindowDimensions,  } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import StatusChip from "@/components/StatusChip";
 import ConfirmModal from "@/components/ConfirmModal";
 import ReasonModal from "@/components/ReasonModal";
 import Colors from "@/constants/colors";
+import { Input } from "@/components/Input";
+import { Button } from "@/components/Button";
 import {
   ArrowLeft,
   Mail,
@@ -467,29 +460,37 @@ function OverviewTab({
         <View style={styles.actionButtons}>
           {provider.status === "pending" && (
             <>
-              <TouchableOpacity style={styles.approveButton} onPress={onApprove}>
-                <CheckCircle size={18} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Approve Provider</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.rejectButton} onPress={onReject}>
-                <XCircle size={18} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Reject Provider</Text>
-              </TouchableOpacity>
+              <Button
+                title="Approve Provider"
+                icon={<CheckCircle size={18} color="#FFFFFF" />}
+                onPress={onApprove}
+                style={{ backgroundColor: Colors.light.success }}
+              />
+              <Button
+                title="Reject Provider"
+                icon={<XCircle size={18} color="#FFFFFF" />}
+                onPress={onReject}
+                style={{ backgroundColor: Colors.light.error }}
+              />
             </>
           )}
 
           {provider.status === "approved" && (
-            <TouchableOpacity style={styles.suspendButton} onPress={onSuspend}>
-              <Ban size={18} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>Suspend Provider</Text>
-            </TouchableOpacity>
+            <Button
+              title="Suspend Provider"
+              icon={<Ban size={18} color="#FFFFFF" />}
+              onPress={onSuspend}
+              style={{ backgroundColor: Colors.light.error }}
+            />
           )}
 
           {provider.status === "suspended" && (
-            <TouchableOpacity style={styles.unsuspendButton} onPress={onUnsuspend}>
-              <Play size={18} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>Unsuspend Provider</Text>
-            </TouchableOpacity>
+            <Button
+              title="Unsuspend Provider"
+              icon={<Play size={18} color="#FFFFFF" />}
+              onPress={onUnsuspend}
+              style={{ backgroundColor: Colors.light.success }}
+            />
           )}
         </View>
       </View>
@@ -593,17 +594,19 @@ function ProfileTab({
       <View style={styles.profileHeader}>
         <Text style={styles.sectionTitle}>Profile Information</Text>
         {!isEditing ? (
-          <TouchableOpacity
-            style={styles.editButton}
+          <Button
+            title="Edit"
+            variant="secondary"
+            icon={<Edit size={16} color={Colors.light.primary} />}
             onPress={() => setIsEditing(true)}
-          >
-            <Edit size={16} color={Colors.light.primary} />
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
+            style={{ height: 40, borderRadius: 20 }}
+          />
         ) : (
           <View style={styles.editActions}>
-            <TouchableOpacity
-              style={styles.cancelEditButton}
+            <Button
+              title="Cancel"
+              variant="secondary"
+              icon={<CloseIcon size={16} color={Colors.light.text} />}
               onPress={() => {
                 setIsEditing(false);
                 setEditForm({
@@ -617,24 +620,16 @@ function ProfileTab({
                   description: provider.description,
                 });
               }}
-            >
-              <CloseIcon size={16} color={Colors.light.text} />
-              <Text style={styles.cancelEditButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.saveButton}
+              style={{ height: 40, borderRadius: 20 }}
+            />
+            <Button
+              title="Save"
+              icon={<Save size={16} color="#FFFFFF" />}
               onPress={onSave}
               disabled={isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <Save size={16} color="#FFFFFF" />
-                  <Text style={styles.saveButtonText}>Save</Text>
-                </>
-              )}
-            </TouchableOpacity>
+              loading={isSaving}
+              style={{ height: 40, borderRadius: 20 }}
+            />
           </View>
         )}
       </View>
@@ -643,10 +638,10 @@ function ProfileTab({
         <View style={styles.formRow}>
           <Text style={styles.formLabel}>Full Name</Text>
           {isEditing ? (
-            <TextInput
-              style={styles.formInput}
+            <Input
               value={editForm.name}
               onChangeText={(text) => setEditForm({ ...editForm, name: text })}
+              style={{ height: 44, borderRadius: 22 }}
             />
           ) : (
             <Text style={styles.formValue}>{provider.name}</Text>
@@ -656,11 +651,11 @@ function ProfileTab({
         <View style={styles.formRow}>
           <Text style={styles.formLabel}>Email</Text>
           {isEditing ? (
-            <TextInput
-              style={styles.formInput}
+            <Input
               value={editForm.email}
               onChangeText={(text) => setEditForm({ ...editForm, email: text })}
               keyboardType="email-address"
+              style={{ height: 44, borderRadius: 22 }}
             />
           ) : (
             <Text style={styles.formValue}>{provider.email}</Text>
@@ -670,11 +665,11 @@ function ProfileTab({
         <View style={styles.formRow}>
           <Text style={styles.formLabel}>Phone</Text>
           {isEditing ? (
-            <TextInput
-              style={styles.formInput}
+            <Input
               value={editForm.phone}
               onChangeText={(text) => setEditForm({ ...editForm, phone: text })}
               keyboardType="phone-pad"
+              style={{ height: 44, borderRadius: 22 }}
             />
           ) : (
             <Text style={styles.formValue}>{provider.phone}</Text>
@@ -684,10 +679,10 @@ function ProfileTab({
         <View style={styles.formRow}>
           <Text style={styles.formLabel}>Category</Text>
           {isEditing ? (
-            <TextInput
-              style={styles.formInput}
+            <Input
               value={editForm.category}
               onChangeText={(text) => setEditForm({ ...editForm, category: text })}
+              style={{ height: 44, borderRadius: 22 }}
             />
           ) : (
             <Text style={styles.formValue}>{provider.category}</Text>
@@ -697,10 +692,10 @@ function ProfileTab({
         <View style={styles.formRow}>
           <Text style={styles.formLabel}>Location</Text>
           {isEditing ? (
-            <TextInput
-              style={styles.formInput}
+            <Input
               value={editForm.location}
               onChangeText={(text) => setEditForm({ ...editForm, location: text })}
+              style={{ height: 44, borderRadius: 22 }}
             />
           ) : (
             <Text style={styles.formValue}>{provider.location}</Text>
@@ -710,10 +705,10 @@ function ProfileTab({
         <View style={styles.formRow}>
           <Text style={styles.formLabel}>Business Name</Text>
           {isEditing ? (
-            <TextInput
-              style={styles.formInput}
+            <Input
               value={editForm.businessName}
               onChangeText={(text) => setEditForm({ ...editForm, businessName: text })}
+              style={{ height: 44, borderRadius: 22 }}
             />
           ) : (
             <Text style={styles.formValue}>{provider.businessName || "N/A"}</Text>
@@ -723,10 +718,10 @@ function ProfileTab({
         <View style={styles.formRow}>
           <Text style={styles.formLabel}>Service Area</Text>
           {isEditing ? (
-            <TextInput
-              style={styles.formInput}
+            <Input
               value={editForm.serviceArea}
               onChangeText={(text) => setEditForm({ ...editForm, serviceArea: text })}
+              style={{ height: 44, borderRadius: 22 }}
             />
           ) : (
             <Text style={styles.formValue}>{provider.serviceArea || "N/A"}</Text>
@@ -736,13 +731,13 @@ function ProfileTab({
         <View style={styles.formRow}>
           <Text style={styles.formLabel}>Description</Text>
           {isEditing ? (
-            <TextInput
-              style={[styles.formInput, styles.formTextarea]}
+            <Input
               value={editForm.description}
               onChangeText={(text) => setEditForm({ ...editForm, description: text })}
               multiline
               numberOfLines={4}
-              textAlignVertical="top"
+              style={{ height: 100, borderRadius: 12 }}
+              inputStyle={{ textAlignVertical: "top", paddingTop: 12, paddingBottom: 12 }}
             />
           ) : (
             <Text style={styles.formValue}>{provider.description || "N/A"}</Text>

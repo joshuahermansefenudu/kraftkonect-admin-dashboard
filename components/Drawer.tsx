@@ -1,11 +1,5 @@
-import {
-  StyleSheet,
-  View,
-  Modal,
-  TouchableOpacity,
-  ScrollView,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, View, Modal, ScrollView, useWindowDimensions,  } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
 import Colors from "@/constants/colors";

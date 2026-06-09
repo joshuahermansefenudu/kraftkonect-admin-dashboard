@@ -1,20 +1,13 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-  Alert,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Alert, useWindowDimensions,  } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import StatusChip from "@/components/StatusChip";
 import ConfirmModal from "@/components/ConfirmModal";
 import Drawer from "@/components/Drawer";
 import Colors from "@/constants/colors";
+import { Input } from "@/components/Input";
+import { Button } from "@/components/Button";
 import {
   Search,
   Filter,
@@ -228,24 +221,21 @@ export default function UsersManagementScreen() {
           </View>
 
           <View style={[styles.controls, isMobile && styles.controlsMobile]}>
-            <View style={[styles.searchBar, isMobile && styles.searchBarMobile]}>
-              <Search size={18} color={Colors.light.textSecondary} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search by name, email, or phone..."
-                value={search}
-                onChangeText={setSearch}
-                placeholderTextColor={Colors.light.textSecondary}
-              />
-            </View>
+            <Input
+              placeholder="Search by name, email, or phone..."
+              value={search}
+              onChangeText={setSearch}
+              icon={<Search size={18} color={Colors.light.textSecondary} />}
+              containerStyle={{ flex: isMobile ? 0 : 1, width: isMobile ? "100%" : "auto" }}
+            />
 
-            <TouchableOpacity
-              style={[styles.filterButton, isMobile && styles.filterButtonMobile]}
+            <Button
+              title="Filters"
+              variant="secondary"
+              icon={<Filter size={18} color={Colors.light.primary} />}
               onPress={() => setShowFilterMenu(!showFilterMenu)}
-            >
-              <Filter size={18} color={Colors.light.primary} />
-              <Text style={styles.filterButtonText}>Filters</Text>
-            </TouchableOpacity>
+              style={isMobile ? { width: "100%" } : undefined}
+            />
           </View>
 
           {showFilterMenu && (
@@ -365,42 +355,27 @@ export default function UsersManagementScreen() {
               )}
 
               <View style={styles.pagination}>
-                <TouchableOpacity
-                  style={[styles.paginationButton, page === 1 && styles.paginationButtonDisabled]}
+                <Button
+                  title="Previous"
                   onPress={() => setPage(page - 1)}
                   disabled={page === 1}
-                >
-                  <ChevronLeft size={18} color={page === 1 ? Colors.light.border : Colors.light.text} />
-                  <Text style={[styles.paginationButtonText, page === 1 && styles.paginationButtonTextDisabled]}>
-                    Previous
-                  </Text>
-                </TouchableOpacity>
+                  variant="secondary"
+                  icon={<ChevronLeft size={18} color={page === 1 ? Colors.light.border : Colors.light.text} />}
+                  style={{ height: 40, borderRadius: 20 }}
+                />
 
                 <Text style={styles.paginationInfo}>
                   Page {page} of {totalPages}
                 </Text>
 
-                <TouchableOpacity
-                  style={[
-                    styles.paginationButton,
-                    page === totalPages && styles.paginationButtonDisabled,
-                  ]}
+                <Button
+                  title="Next"
                   onPress={() => setPage(page + 1)}
                   disabled={page === totalPages}
-                >
-                  <Text
-                    style={[
-                      styles.paginationButtonText,
-                      page === totalPages && styles.paginationButtonTextDisabled,
-                    ]}
-                  >
-                    Next
-                  </Text>
-                  <ChevronRight
-                    size={18}
-                    color={page === totalPages ? Colors.light.border : Colors.light.text}
-                  />
-                </TouchableOpacity>
+                  variant="secondary"
+                  icon={<ChevronRight size={18} color={page === totalPages ? Colors.light.border : Colors.light.text} />}
+                  style={{ height: 40, borderRadius: 20 }}
+                />
               </View>
             </>
           )}
@@ -845,7 +820,7 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     paddingVertical: 0,
     textAlignVertical: "center" as const,
-    outlineStyle: "none" as const,
+    outlineStyle: "none" as any,
   },
   filterButton: {
     flexDirection: "row",

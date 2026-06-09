@@ -1,15 +1,7 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  Modal,
-  useWindowDimensions,
-  ActivityIndicator,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, Alert, Modal, useWindowDimensions, ActivityIndicator } from "react-native";
+import { Button } from "@/components/Button";
+import { Input } from "@/components/Input";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
@@ -126,10 +118,12 @@ export default function EarningsScreen() {
                 Manage provider earnings and payment processing
               </Text>
             </View>
-            <TouchableOpacity style={[styles.exportButton, isMobile && styles.exportButtonMobile]} onPress={handleExportCSV}>
-              <Download size={18} color="#FFFFFF" />
-              <Text style={styles.exportButtonText}>Export CSV</Text>
-            </TouchableOpacity>
+            <Button
+              title="Export CSV"
+              onPress={handleExportCSV}
+              icon={<Download size={18} color="#FFFFFF" />}
+              style={isMobile ? { height: 48, paddingHorizontal: 16 } : undefined}
+            />
           </View>
 
           {loading && (
@@ -166,16 +160,12 @@ export default function EarningsScreen() {
             </View>
           </View>
 
-          <View style={styles.searchBar}>
-            <Search size={20} color={Colors.light.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by payout ID, provider..."
-              placeholderTextColor={Colors.light.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
+          <Input
+            placeholder="Search by payout ID, provider..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            icon={<Search size={20} color={Colors.light.textSecondary} />}
+          />
 
           <ScrollView
             horizontal
@@ -278,23 +268,19 @@ export default function EarningsScreen() {
               </View>
             )}
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSecondary]}
+              <Button
+                title="Cancel"
+                variant="outline"
+                style={{ flex: 1, borderWidth: 1, borderColor: Colors.light.border, height: 48 }}
+                textStyle={{ color: Colors.light.text, fontSize: 15 }}
                 onPress={() => setShowProcessModal(false)}
-              >
-                <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, processLoading && { opacity: 0.6 }]}
+              />
+              <Button
+                title="Process"
                 onPress={confirmProcessPayout}
-                disabled={processLoading}
-              >
-                {processLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.modalButtonText}>Process</Text>
-                )}
-              </TouchableOpacity>
+                loading={processLoading}
+                style={{ flex: 1, height: 48 }}
+              />
             </View>
           </View>
         </View>
@@ -412,13 +398,12 @@ function PayoutCard({
       </View>
 
       {payout.status === "pending" && (
-        <TouchableOpacity
-          style={styles.payoutCardButton}
+        <Button
+          title="Process Payout"
           onPress={() => onProcess(payout)}
-        >
-          <DollarSign size={18} color="#FFFFFF" />
-          <Text style={styles.payoutCardButtonText}>Process Payout</Text>
-        </TouchableOpacity>
+          icon={<DollarSign size={18} color="#FFFFFF" />}
+          style={{ height: 48, marginTop: 12 }}
+        />
       )}
     </View>
   );
@@ -503,13 +488,13 @@ function PayoutRow({
 
       <View style={[styles.tableCell, { flex: 1 }]}>
         {payout.status === "pending" && (
-          <TouchableOpacity
-            style={styles.actionButton}
+          <Button
+            title="Process"
             onPress={() => onProcess(payout)}
-          >
-            <DollarSign size={16} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Process</Text>
-          </TouchableOpacity>
+            icon={<DollarSign size={16} color="#FFFFFF" />}
+            style={{ height: 36, paddingHorizontal: 12 }}
+            textStyle={{ fontSize: 13 }}
+          />
         )}
       </View>
     </View>
@@ -627,7 +612,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: Colors.light.text,
-    outlineStyle: "none",
+    outlineStyle: "none" as any,
   },
   filterBar: {
     marginBottom: 24,

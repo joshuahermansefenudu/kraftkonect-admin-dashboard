@@ -47,7 +47,7 @@ const makeGraphQLRequest = async <T>(
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
-  const result: GraphQLResponse<T> = await response.json();
+  const result = (await response.json()) as GraphQLResponse<T>;
 
   if (result.errors && result.errors.length > 0) {
     throw new Error(result.errors[0].message);
@@ -327,7 +327,8 @@ export const adminRejectProvider = async (providerId: string, reason?: string): 
 
 export const adminUpdateProviderStatus = async (
   providerId: string,
-  status: ProviderStatus
+  status: ProviderStatus,
+  reason?: string
 ): Promise<BackendProvider> => {
   const mutation = `
     mutation AdminUpdateProviderStatus($providerId: ID!, $status: ProviderStatus!) {

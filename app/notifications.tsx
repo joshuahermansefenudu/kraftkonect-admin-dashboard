@@ -1,19 +1,12 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  Platform,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, Alert, Platform, useWindowDimensions,  } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import Sidebar from "@/components/Sidebar";
 import Colors from "@/constants/colors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Send, Users, MapPin, Star } from "lucide-react-native";
 import { useState } from "react";
+import { Input } from "@/components/Input";
+import { Button } from "@/components/Button";
 
 type SegmentType = "all" | "users" | "providers" | "location" | "rating";
 
@@ -107,10 +100,8 @@ export default function NotificationsScreen() {
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Title</Text>
-                <TextInput
-                  style={styles.input}
+                <Input
                   placeholder="Notification title"
-                  placeholderTextColor={Colors.light.textSecondary}
                   value={title}
                   onChangeText={setTitle}
                 />
@@ -118,14 +109,14 @@ export default function NotificationsScreen() {
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Message</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
+                <Input
                   placeholder="Type your message here..."
-                  placeholderTextColor={Colors.light.textSecondary}
                   value={message}
                   onChangeText={setMessage}
                   multiline
                   numberOfLines={5}
+                  style={{ height: 120, borderRadius: 12 }}
+                  inputStyle={{ textAlignVertical: "top", paddingTop: 12, paddingBottom: 12 }}
                 />
               </View>
 
@@ -145,13 +136,12 @@ export default function NotificationsScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity
-                style={styles.sendButton}
+              <Button
+                title="Send Notification"
+                icon={<Send size={18} color="#FFFFFF" />}
                 onPress={handleSendNotification}
-              >
-                <Send size={18} color="#FFFFFF" />
-                <Text style={styles.sendButtonText}>Send Notification</Text>
-              </TouchableOpacity>
+                style={{ width: "100%" }}
+              />
             </View>
 
             <View style={styles.segmentSection}>
@@ -195,15 +185,15 @@ export default function NotificationsScreen() {
                   <Text style={styles.segmentCardTitle}>By Location</Text>
                 </View>
                 <View style={styles.locationInput}>
-                  <TextInput
-                    style={styles.segmentInput}
+                  <Input
                     placeholder="Enter city or state"
-                    placeholderTextColor={Colors.light.textSecondary}
                     value={locationValue}
                     onChangeText={setLocationValue}
+                    containerStyle={{ flex: 1 }}
+                    style={{ height: 44, borderRadius: 22 }}
                   />
-                  <TouchableOpacity
-                    style={styles.addSegmentButton}
+                  <Button
+                    title="Add"
                     onPress={() => {
                       if (locationValue.trim()) {
                         handleAddSegment(
@@ -214,9 +204,8 @@ export default function NotificationsScreen() {
                         setLocationValue("");
                       }
                     }}
-                  >
-                    <Text style={styles.addSegmentButtonText}>Add</Text>
-                  </TouchableOpacity>
+                    style={{ height: 44, borderRadius: 22 }}
+                  />
                 </View>
               </View>
 
@@ -284,19 +273,21 @@ function SegmentButton({
   isSelected: boolean;
 }) {
   return (
-    <TouchableOpacity
-      style={[styles.segmentButton, isSelected && styles.segmentButtonSelected]}
+    <Button
+      title={label}
+      variant={isSelected ? "primary" : "secondary"}
       onPress={onPress}
-    >
-      <Text
-        style={[
-          styles.segmentButtonText,
-          isSelected && styles.segmentButtonTextSelected,
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
+      style={{
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: isSelected ? `${Colors.light.primary}15` : Colors.light.background,
+        borderColor: isSelected ? Colors.light.primary : Colors.light.border,
+      }}
+      textStyle={{
+        fontSize: 14,
+        color: isSelected ? Colors.light.primary : Colors.light.text,
+      }}
+    />
   );
 }
 
@@ -368,7 +359,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     color: Colors.light.text,
-    outlineStyle: "none",
+    outlineStyle: "none" as any,
   },
   textArea: {
     height: 120,
@@ -479,7 +470,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     color: Colors.light.text,
-    outlineStyle: "none",
+    outlineStyle: "none" as any,
   },
   addSegmentButton: {
     backgroundColor: Colors.light.primary,

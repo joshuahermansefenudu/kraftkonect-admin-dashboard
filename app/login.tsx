@@ -1,17 +1,11 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  Platform,
-} from "react-native";
+import { StyleSheet, Text, View, Platform, } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Colors from "@/constants/colors";
 import { Lock, Mail, Shield } from "lucide-react-native";
+import { Button } from "@/components/Button";
+import { Input } from "@/components/Input";
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -51,52 +45,34 @@ export default function LoginScreen() {
           </Text>
 
           <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email Address</Text>
-              <View style={styles.inputWrapper}>
-                <Mail size={20} color={Colors.light.textSecondary} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="admin@example.com"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  editable={!isLoading}
-                />
-              </View>
-            </View>
+            <Input
+              label="Email Address"
+              placeholder="admin@example.com"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!isLoading}
+              icon={<Mail size={20} color={Colors.light.textSecondary} />}
+            />
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={styles.inputWrapper}>
-                <Lock size={20} color={Colors.light.textSecondary} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your password"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  editable={!isLoading}
-                />
-              </View>
-            </View>
+            <Input
+              label="Password"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!isLoading}
+              icon={<Lock size={20} color={Colors.light.textSecondary} />}
+            />
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-            <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
+            <Button
+              title="Sign In"
               onPress={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
-              )}
-            </TouchableOpacity>
+              loading={isLoading}
+            />
           </View>
         </View>
       </View>

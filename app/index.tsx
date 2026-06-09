@@ -1,12 +1,5 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, Modal, useWindowDimensions,  } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
 import MetricCard from "@/components/MetricCard";

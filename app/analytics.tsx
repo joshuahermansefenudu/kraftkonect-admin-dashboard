@@ -1,13 +1,5 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  useWindowDimensions,
-  ActivityIndicator,
-  RefreshControl,
-} from "react-native";
+import { StyleSheet, Text, View, ScrollView, useWindowDimensions, ActivityIndicator, RefreshControl,  } from "react-native";
+import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Polyline, Circle, Line, Text as SvgText } from "react-native-svg";
 import { useState, useEffect, useCallback, useMemo } from "react";
