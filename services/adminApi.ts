@@ -7,12 +7,11 @@ import {
   ProviderStatus,
   ProviderUpdateInput,
 } from "@/types/admin";
-import { paginateData } from "@/mocks/users";
+import { paginateData } from "@/utils/pagination";
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ??
   "https://kraftkonnect-backend-230084714703.us-central1.run.app/graphql";
-const USE_MOCK_DATA = false;
 
 // ── Token management ─────────────────────────────────────────────────────────
 let _authToken: string | null = null;
@@ -191,6 +190,11 @@ export const adminDeleteUser = async (userId: string): Promise<boolean> => {
 // ── Providers ────────────────────────────────────────────────────────────────
 
 // Shape returned to screens (compatible with what providers.tsx expects)
+export interface ProviderDocument {
+  name: string;
+  url: string;
+}
+
 export interface BackendProvider {
   id: string;
   name: string;
@@ -200,7 +204,7 @@ export interface BackendProvider {
   location: string;
   status: ProviderStatus;
   submittedAt: string;
-  documents: string[];
+  documents: ProviderDocument[];
   bio?: string;
   rating?: number;
   // AI pre-screen fields (null = check not yet run)
@@ -235,6 +239,10 @@ export const adminProvidersQuery = async (params: {
         aiIdReadable
         aiFaceMatch
         aiDuplicateFlag
+        verificationDocs {
+          idUrl
+          selfieUrl
+        }
         user {
           email
           phone
@@ -258,7 +266,10 @@ export const adminProvidersQuery = async (params: {
     location: p.serviceAreas?.join(", ") || "Lagos",
     status: p.status as ProviderStatus,
     submittedAt: p.createdAt || new Date().toISOString(),
-    documents: ["ID Document", "Selfie"],
+    documents: [
+      p.verificationDocs?.idUrl && { name: "Government ID", url: p.verificationDocs.idUrl },
+      p.verificationDocs?.selfieUrl && { name: "Selfie", url: p.verificationDocs.selfieUrl },
+    ].filter(Boolean) as ProviderDocument[],
     bio: p.bio || "",
     rating: p.rating ? parseFloat(p.rating) : undefined,
     aiPhotoQuality: p.aiPhotoQuality ?? null,
@@ -960,6 +971,3 @@ export const adminCloseTicketApi = async (ticketId: string): Promise<void> => {
   `;
   await makeGraphQLRequest(mutation, { ticketId });
 };
-
-// Keep this export for backwards compat (used in users.tsx)
-export { USE_MOCK_DATA };

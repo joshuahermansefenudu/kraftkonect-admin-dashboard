@@ -8,6 +8,8 @@ import {
   Modal,
   useWindowDimensions,
   ActivityIndicator,
+  Image,
+  Linking,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
@@ -45,14 +47,14 @@ export default function ProviderApprovalsScreen() {
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
-  const [viewingDocument, setViewingDocument] = useState<{ name: string; provider: string } | null>(null);
+  const [viewingDocument, setViewingDocument] = useState<{ name: string; url: string; provider: string } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const loadProviders = () => {
     setLoading(true);
     setError(null);
     adminProvidersQuery({ status: "pending" })
-      .then((res) => setProviders(res.providers as Provider[]))
+      .then((res) => setProviders(res.providers as unknown as Provider[]))
       .catch((e) => setError(e.message ?? "Failed to load providers"))
       .finally(() => setLoading(false));
   };
@@ -154,7 +156,7 @@ export default function ProviderApprovalsScreen() {
                   provider={provider}
                   onApprove={() => handleAction(provider, "approve")}
                   onReject={() => handleAction(provider, "reject")}
-                  onDocumentPress={(docName) => setViewingDocument({ name: docName, provider: provider.name })}
+                  onDocumentPress={(doc) => setViewingDocument({ name: doc.name, url: doc.url, provider: provider.name })}
                   onRerunAi={async () => {
                     try {
                       const updated = await adminAiPreScreenApi(provider.id);
@@ -252,7 +254,7 @@ function DocumentViewerModal({
   document,
   onClose,
 }: {
-  document: { name: string; provider: string } | null;
+  document: { name: string; url: string; provider: string } | null;
   onClose: () => void;
 }) {
   const { width } = useWindowDimensions();
@@ -260,12 +262,9 @@ function DocumentViewerModal({
 
   if (!document) return null;
 
-  const handleDownload = () => {
-    console.log(`Downloading document: ${document.name}`);
-    Alert.alert(
-      "Download Started",
-      `${document.name} is being downloaded to your device.`,
-      [{ text: "OK" }]
+  const handleOpenExternal = () => {
+    Linking.openURL(document.url).catch(() =>
+      Alert.alert("Couldn't open", "Unable to open the document in a new tab."),
     );
   };
 
@@ -295,51 +294,20 @@ function DocumentViewerModal({
             style={styles.documentModalBody}
             contentContainerStyle={styles.documentModalBodyContent}
           >
-            <View style={styles.documentPreview}>
-              <FileText size={64} color={Colors.light.primary} />
-              <Text style={styles.documentPreviewText}>
-                Document Preview
-              </Text>
-              <Text style={styles.documentPreviewSubtext}>
-                This is a sample document viewer. In a real application, you would display the actual document content here using a PDF viewer or image viewer.
-              </Text>
-            </View>
-
-            <View style={styles.documentInfo}>
-              <View style={styles.documentInfoRow}>
-                <Text style={styles.documentInfoLabel}>File Name:</Text>
-                <Text style={styles.documentInfoValue}>{document.name}.pdf</Text>
-              </View>
-              <View style={styles.documentInfoRow}>
-                <Text style={styles.documentInfoLabel}>Provider:</Text>
-                <Text style={styles.documentInfoValue}>{document.provider}</Text>
-              </View>
-              <View style={styles.documentInfoRow}>
-                <Text style={styles.documentInfoLabel}>File Size:</Text>
-                <Text style={styles.documentInfoValue}>2.4 MB</Text>
-              </View>
-              <View style={styles.documentInfoRow}>
-                <Text style={styles.documentInfoLabel}>Upload Date:</Text>
-                <Text style={styles.documentInfoValue}>
-                  {new Date().toLocaleDateString()}
-                </Text>
-              </View>
-              <View style={styles.documentInfoRow}>
-                <Text style={styles.documentInfoLabel}>Status:</Text>
-                <View style={styles.documentStatusBadge}>
-                  <Text style={styles.documentStatusText}>Verified</Text>
-                </View>
-              </View>
-            </View>
+            <Image
+              source={{ uri: document.url }}
+              style={styles.documentImage}
+              resizeMode="contain"
+            />
           </ScrollView>
 
           <View style={styles.documentModalFooter}>
             <TouchableOpacity
               style={styles.downloadButton}
-              onPress={handleDownload}
+              onPress={handleOpenExternal}
             >
               <Download size={18} color="#FFFFFF" />
-              <Text style={styles.downloadButtonText}>Download Document</Text>
+              <Text style={styles.downloadButtonText}>Open Full Size</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -460,7 +428,7 @@ function ProviderCard({
   provider: Provider;
   onApprove: () => void;
   onReject: () => void;
-  onDocumentPress: (docName: string) => void;
+  onDocumentPress: (doc: { name: string; url: string }) => void;
   onRerunAi: () => Promise<void>;
 }) {
   const formatDate = (dateString: string) => {
@@ -517,19 +485,23 @@ function ProviderCard({
 
       <View style={styles.documentsSection}>
         <Text style={styles.documentsTitle}>Submitted Documents</Text>
-        <View style={styles.documentsList}>
-          {provider.documents.map((doc, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.documentChip}
-              onPress={() => onDocumentPress(doc)}
-              activeOpacity={0.7}
-            >
-              <FileText size={14} color={Colors.light.primary} />
-              <Text style={styles.documentText}>{doc}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {provider.documents.length === 0 ? (
+          <Text style={styles.noDocumentsText}>No documents uploaded</Text>
+        ) : (
+          <View style={styles.documentsList}>
+            {provider.documents.map((doc, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.documentChip}
+                onPress={() => onDocumentPress(doc)}
+                activeOpacity={0.7}
+              >
+                <FileText size={14} color={Colors.light.primary} />
+                <Text style={styles.documentText}>{doc.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       <View style={styles.actionsRow}>
@@ -951,6 +923,17 @@ const styles = StyleSheet.create({
   },
   documentModalBodyContent: {
     padding: 20,
+  },
+  documentImage: {
+    width: "100%",
+    height: 420,
+    borderRadius: 12,
+    backgroundColor: Colors.light.background,
+  },
+  noDocumentsText: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    fontStyle: "italic",
   },
   documentPreview: {
     backgroundColor: Colors.light.background,
