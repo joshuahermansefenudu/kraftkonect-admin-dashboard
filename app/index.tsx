@@ -7,7 +7,7 @@ import Colors from "@/constants/colors";
 import Svg, { Line, Circle } from "react-native-svg";
 import { useMemo, useState, useEffect } from "react";
 import { ActivityIndicator } from "react-native";
-import { adminGetDashboard, DashboardData } from "@/services/adminApi";
+import { adminGetDashboard, DashboardData, ActivityItem } from "@/services/adminApi";
 import { Calendar, ChevronDown } from "lucide-react-native";
 
 type DateRange = {
@@ -262,26 +262,12 @@ export default function DashboardOverview() {
           <View style={[styles.activityCard, isMobile && styles.activityCardMobile]}>
             <Text style={[styles.chartTitle, isMobile && styles.chartTitleMobile]}>Recent Activity</Text>
             <View style={styles.activityList}>
-              <ActivityItem
-                title="New provider approved"
-                description="Sarah Johnson - Electrical Services"
-                time="2 minutes ago"
-              />
-              <ActivityItem
-                title="Booking completed"
-                description="BKG-4723 • $450.00"
-                time="15 minutes ago"
-              />
-              <ActivityItem
-                title="Dispute resolved"
-                description="DSP-102 • Payment issue"
-                time="1 hour ago"
-              />
-              <ActivityItem
-                title="Support ticket opened"
-                description="TKT-892 • Account verification"
-                time="2 hours ago"
-              />
+              {(dashboard?.recentActivity ?? []).length === 0 && !loading && (
+                <Text style={styles.emptyActivity}>No recent activity</Text>
+              )}
+              {(dashboard?.recentActivity ?? []).map((item) => (
+                <ActivityItemRow key={item.id} item={item} />
+              ))}
             </View>
           </View>
         </SafeAreaView>
@@ -290,23 +276,27 @@ export default function DashboardOverview() {
   );
 }
 
-function ActivityItem({
-  title,
-  description,
-  time,
-}: {
-  title: string;
-  description: string;
-  time: string;
-}) {
+function formatActivityTime(iso: string): string {
+  const d = new Date(iso);
+  const diffMs = Date.now() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function ActivityItemRow({ item }: { item: ActivityItem }) {
   return (
     <View style={styles.activityItem}>
       <View style={styles.activityDot} />
       <View style={styles.activityContent}>
-        <Text style={styles.activityTitle}>{title}</Text>
-        <Text style={styles.activityDescription}>{description}</Text>
+        <Text style={styles.activityTitle}>{item.title}</Text>
+        <Text style={styles.activityDescription}>{item.description}</Text>
       </View>
-      <Text style={styles.activityTime}>{time}</Text>
+      <Text style={styles.activityTime}>{formatActivityTime(item.createdAt)}</Text>
     </View>
   );
 }
@@ -513,6 +503,12 @@ const styles = StyleSheet.create({
   activityTime: {
     fontSize: 13,
     color: Colors.light.textSecondary,
+  },
+  emptyActivity: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    textAlign: "center" as const,
+    paddingVertical: 16,
   },
   dateRangeButton: {
     flexDirection: "row",

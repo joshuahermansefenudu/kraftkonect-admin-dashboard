@@ -414,10 +414,19 @@ export const adminAiPreScreenApi = async (providerId: string): Promise<BackendPr
 };
 
 // ── Dashboard metrics ────────────────────────────────────────────────────────
+export interface ActivityItem {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: string;
+}
+
 export interface DashboardData {
   metrics: Array<{ label: string; value: string; change: number; icon: string }>;
   revenue: Array<{ month: string; bookings: number; revenue: number }>;
   categories: Array<{ name: string; value: number }>;
+  recentActivity: ActivityItem[];
 }
 
 export const adminGetDashboard = async (): Promise<DashboardData> => {
@@ -432,18 +441,23 @@ export const adminGetDashboard = async (): Promise<DashboardData> => {
       adminCategoryDistribution {
         name value
       }
+      adminRecentActivity(limit: 10) {
+        id type title description createdAt
+      }
     }
   `;
   const result = await makeGraphQLRequest<{
     adminDashboardMetrics: DashboardData["metrics"];
     adminRevenueChart: DashboardData["revenue"];
     adminCategoryDistribution: DashboardData["categories"];
+    adminRecentActivity: ActivityItem[];
   }>(query);
 
   return {
     metrics: result.adminDashboardMetrics,
     revenue: result.adminRevenueChart,
     categories: result.adminCategoryDistribution,
+    recentActivity: result.adminRecentActivity ?? [],
   };
 };
 
