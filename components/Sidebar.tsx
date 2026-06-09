@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   LogOut,
+  Settings,
 } from "lucide-react-native";
 import { useState } from "react";
 import Colors from "@/constants/colors";
@@ -40,6 +41,7 @@ const navItems: NavItem[] = [
   { label: "Support Center", path: "/support", icon: Headphones },
   { label: "Notifications", path: "/notifications", icon: Bell },
   { label: "Audit Logs", path: "/audit", icon: FileText },
+  { label: "System Settings", path: "/settings", icon: Settings },
 ];
 
 export default function Sidebar() {

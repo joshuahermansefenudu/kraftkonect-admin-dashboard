@@ -972,3 +972,42 @@ export const adminCloseTicketApi = async (ticketId: string): Promise<void> => {
   `;
   await makeGraphQLRequest(mutation, { ticketId });
 };
+
+// ── System Settings ─────────────────────────────────────────────────────────
+export interface SystemSetting {
+  key: string;
+  value: string;
+  updatedAt?: string;
+}
+
+export const adminGetSystemSettingsApi = async (): Promise<SystemSetting[]> => {
+  const query = `
+    query GetSystemSettings {
+      systemSettings {
+        key
+        value
+      }
+    }
+  `;
+  return makeGraphQLRequest<{ systemSettings: SystemSetting[] }>(query).then(
+    (res) => res.systemSettings
+  );
+};
+
+export const adminUpdateSystemSettingApi = async (
+  key: string,
+  value: string
+): Promise<SystemSetting> => {
+  const mutation = `
+    mutation UpdateSystemSetting($key: String!, $value: String!) {
+      updateSystemSetting(key: $key, value: $value) {
+        key
+        value
+      }
+    }
+  `;
+  return makeGraphQLRequest<{ updateSystemSetting: SystemSetting }>(mutation, {
+    key,
+    value,
+  }).then((res) => res.updateSystemSetting);
+};
