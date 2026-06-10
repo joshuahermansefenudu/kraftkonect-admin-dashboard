@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ActivityIndicator, View } from "react-native";
 import { useFonts } from "expo-font";
 import { interFontMap, applyGlobalInterFont } from "@/lib/fonts";
+import { UpdateBanner } from "@/components/UpdateBanner";
 
 applyGlobalInterFont();
 
@@ -81,8 +82,9 @@ export default function RootLayout() {
       <PersistGate loading={null} persistor={persistor}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <GestureHandlerRootView>
+            <GestureHandlerRootView style={{ flex: 1 }}>
               <RootLayoutNav />
+              <UpdateBanner />
             </GestureHandlerRootView>
           </AuthProvider>
         </QueryClientProvider>

@@ -23,7 +23,7 @@ export interface Provider {
   status: ProviderStatus;
   submittedAt: string;
   approvedAt?: string;
-  documents: string[];
+  documents: { name: string; url: string }[];
   businessName?: string;
   serviceArea?: string;
   description?: string;

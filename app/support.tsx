@@ -313,7 +313,7 @@ function TicketCard({
         <View style={[styles.statusBadge, { backgroundColor: getStatusStyle().backgroundColor }]}>
           <Text style={[styles.statusText, { color: getStatusStyle().color }]}>{ticket.status}</Text>
         </View>
-        {ticket.status !== "resolved" && ticket.status !== "closed" && (
+        {ticket.status !== "resolved" && (
           <View style={styles.actionButtons}>
             <Button
               title="Reply"

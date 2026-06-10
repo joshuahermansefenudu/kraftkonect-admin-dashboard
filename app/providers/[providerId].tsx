@@ -514,10 +514,10 @@ function VerificationTab({ provider }: { provider: Provider }) {
               <TouchableOpacity
                 key={index}
                 style={styles.documentCard}
-                onPress={() => handleDownload(doc)}
+                onPress={() => handleDownload(doc.name)}
               >
                 <FileText size={32} color={Colors.light.primary} />
-                <Text style={styles.documentName}>{doc}</Text>
+                <Text style={styles.documentName}>{doc.name}</Text>
                 <TouchableOpacity style={styles.downloadIconButton}>
                   <Download size={16} color={Colors.light.primary} />
                 </TouchableOpacity>
@@ -545,7 +545,7 @@ function VerificationTab({ provider }: { provider: Provider }) {
               <View style={styles.verificationRow}>
                 <Text style={styles.verificationLabel}>ID Number</Text>
                 <Text style={styles.verificationValue}>
-                  {provider.verificationDetails.idNumber.replace(/\d(?=\d{4})/g, "*")}
+                  {String(provider.verificationDetails.idNumber).replace(/\d(?=\d{4})/g, "*")}
                 </Text>
               </View>
             )}
