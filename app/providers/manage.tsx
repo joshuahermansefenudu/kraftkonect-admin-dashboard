@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Alert, useWindowDimensions,  } from "react-native";
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Alert, useWindowDimensions, RefreshControl, Image } from "react-native";
 import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
@@ -60,8 +60,10 @@ export default function ProvidersManageScreen() {
 
   const pageSize = 20;
 
-  const loadProviders = useCallback(async () => {
-    setIsLoading(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadProviders = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setIsLoading(true);
     try {
       console.log("[ProvidersManage] Loading providers with filters:", {
         search,
@@ -83,9 +85,15 @@ export default function ProvidersManageScreen() {
       console.error("[ProvidersManage] Failed to load providers:", error);
       Alert.alert("Error", "Failed to load providers. Please try again.");
     } finally {
-      setIsLoading(false);
+      if (!isRefresh) setIsLoading(false);
     }
   }, [search, statusFilter, page, pageSize]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadProviders(true);
+    setRefreshing(false);
+  }, [loadProviders]);
 
   useEffect(() => {
     loadProviders();
@@ -218,6 +226,13 @@ export default function ProvidersManageScreen() {
             isMobile && { paddingTop: 60 + insets.top + 16 },
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.light.primary}
+            />
+          }
         >
           <View style={styles.header}>
             <View>
@@ -403,15 +418,24 @@ function ProviderRow({
     <>
       <View style={[styles.tableCell, { flex: 2 }]}>
         <View style={styles.providerAvatar}>
-          <Text style={styles.providerInitials}>
-            {provider.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}
-          </Text>
+          {provider.selfieUrl ? (
+            <Image 
+              source={{ uri: provider.selfieUrl }} 
+              style={styles.providerAvatarImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={styles.providerInitials}>
+              {(provider.name || "Provider")
+                .split(" ")
+                .filter(Boolean)
+                .map((n) => n[0])
+                .join("")}
+            </Text>
+          )}
         </View>
         <View>
-          <Text style={styles.providerName}>{provider.name}</Text>
+          <Text style={styles.providerName}>{provider.name || "Unnamed Provider"}</Text>
           <Text style={styles.providerEmail}>{provider.email}</Text>
         </View>
       </View>
@@ -479,16 +503,25 @@ function ProviderCardMobile({
       <View style={styles.providerCardTop}>
         <View style={styles.providerCardHeader}>
           <View style={styles.providerAvatar}>
-            <Text style={styles.providerInitials}>
-              {provider.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </Text>
+            {provider.selfieUrl ? (
+              <Image 
+                source={{ uri: provider.selfieUrl }} 
+                style={styles.providerAvatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={styles.providerInitials}>
+                {(provider.name || "Provider")
+                  .split(" ")
+                  .filter(Boolean)
+                  .map((n) => n[0])
+                  .join("")}
+              </Text>
+            )}
           </View>
           <View style={styles.providerCardInfo}>
             <Text style={styles.providerName} numberOfLines={1}>
-              {provider.name}
+              {provider.name || "Unnamed Provider"}
             </Text>
             <Text style={styles.providerEmail} numberOfLines={1}>
               {provider.email}
@@ -712,6 +745,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.primary,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  providerAvatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 18,
   },
   providerInitials: {
     fontSize: 13,

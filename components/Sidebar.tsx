@@ -118,15 +118,16 @@ export default function Sidebar() {
                 <View style={styles.userInfo}>
                   <View style={styles.userAvatar}>
                     <Text style={styles.userInitials}>
-                      {user?.name
+                      {(user?.name || "Admin")
                         .split(" ")
+                        .filter(Boolean)
                         .map((n) => n[0])
                         .join("")}
                     </Text>
                   </View>
                   <View style={styles.userDetails}>
-                    <Text style={styles.userName}>{user?.name}</Text>
-                    <Text style={styles.userEmail}>{user?.email}</Text>
+                    <Text style={styles.userName}>{user?.name || "Admin"}</Text>
+                    <Text style={styles.userEmail}>{user?.email || ""}</Text>
                   </View>
                 </View>
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -148,15 +149,16 @@ export default function Sidebar() {
         <View style={styles.userInfo}>
           <View style={styles.userAvatar}>
             <Text style={styles.userInitials}>
-              {user?.name
+              {(user?.name || "Admin")
                 .split(" ")
+                .filter(Boolean)
                 .map((n) => n[0])
                 .join("")}
             </Text>
           </View>
           <View style={styles.userDetails}>
-            <Text style={styles.userName}>{user?.name}</Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
+            <Text style={styles.userName}>{user?.name || "Admin"}</Text>
+            <Text style={styles.userEmail}>{user?.email || ""}</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

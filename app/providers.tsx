@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, ScrollView, Alert, Modal, useWindowDimensions, ActivityIndicator, Image, Linking,  } from "react-native";
+import { StyleSheet, Text, View, ScrollView, Alert, Modal, useWindowDimensions, ActivityIndicator, Image, Linking, RefreshControl } from "react-native";
 import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
@@ -16,7 +16,7 @@ import {
   RefreshCw,
   AlertTriangle,
 } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   adminProvidersQuery,
   adminApproveProvider,
@@ -40,18 +40,30 @@ export default function ProviderApprovalsScreen() {
   const [viewingDocument, setViewingDocument] = useState<{ name: string; url: string; provider: string } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const loadProviders = () => {
-    setLoading(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadProviders = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
     setError(null);
-    adminProvidersQuery({ status: "pending" })
-      .then((res) => setProviders(res.providers as unknown as Provider[]))
-      .catch((e) => setError(e.message ?? "Failed to load providers"))
-      .finally(() => setLoading(false));
-  };
+    try {
+      const res = await adminProvidersQuery({ status: "pending" });
+      setProviders(res.providers as unknown as Provider[]);
+    } catch (e: any) {
+      setError(e.message ?? "Failed to load providers");
+    } finally {
+      if (!isRefresh) setLoading(false);
+    }
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadProviders(true);
+    setRefreshing(false);
+  }, [loadProviders]);
 
   useEffect(() => {
     loadProviders();
-  }, []);
+  }, [loadProviders]);
 
   const pendingProviders = providers.filter((p) => p.status === "pending");
 
@@ -103,6 +115,13 @@ export default function ProviderApprovalsScreen() {
             isMobile && { paddingTop: 60 + insets.top + 16 },
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.light.primary}
+            />
+          }
         >
           <View style={styles.header}>
             <View style={styles.headerText}>
@@ -424,15 +443,24 @@ function ProviderCard({
       <View style={styles.providerHeader}>
         <View style={styles.providerInfo}>
           <View style={styles.providerAvatar}>
-            <Text style={styles.providerInitials}>
-              {provider.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </Text>
+            {provider.selfieUrl ? (
+              <Image 
+                source={{ uri: provider.selfieUrl }} 
+                style={styles.providerAvatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={styles.providerInitials}>
+                {(provider.name || "Provider")
+                  .split(" ")
+                  .filter(Boolean)
+                  .map((n) => n[0])
+                  .join("")}
+              </Text>
+            )}
           </View>
           <View style={styles.providerDetails}>
-            <Text style={styles.providerName}>{provider.name}</Text>
+            <Text style={styles.providerName}>{provider.name || "Unnamed Provider"}</Text>
             <View style={styles.categoryBadge}>
               <Text style={styles.categoryText}>{provider.category}</Text>
             </View>
@@ -575,6 +603,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.primary,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden", // ensures image matches border radius
+  },
+  providerAvatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 24,
   },
   providerInitials: {
     fontSize: 16,

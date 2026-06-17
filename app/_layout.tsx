@@ -7,10 +7,17 @@ import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { store, persistor } from "@/store";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, Alert, Platform } from "react-native";
 import { useFonts } from "expo-font";
 import { interFontMap, applyGlobalInterFont } from "@/lib/fonts";
 import { UpdateBanner } from "@/components/UpdateBanner";
+import CustomAlertModal, { triggerCustomAlert } from "@/components/CustomAlertModal";
+
+// Reassign Alert.alert globally to use the CustomAlertModal
+Alert.alert = (title, message, buttons, options) => {
+  triggerCustomAlert(title, message, buttons, options);
+};
+
 
 applyGlobalInterFont();
 
@@ -85,6 +92,7 @@ export default function RootLayout() {
             <GestureHandlerRootView style={{ flex: 1 }}>
               <RootLayoutNav />
               <UpdateBanner />
+              <CustomAlertModal />
             </GestureHandlerRootView>
           </AuthProvider>
         </QueryClientProvider>

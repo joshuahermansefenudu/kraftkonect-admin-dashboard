@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Alert, useWindowDimensions,  } from "react-native";
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Alert, useWindowDimensions, Image, Modal, Linking } from "react-native";
 import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
@@ -52,6 +52,7 @@ export default function ProviderDetailScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [editForm, setEditForm] = useState<ProviderUpdateInput>({});
+  const [viewingDocument, setViewingDocument] = useState<{ name: string; url: string; provider: string } | null>(null);
 
   const [reasonModal, setReasonModal] = useState<{
     visible: boolean;
@@ -266,16 +267,25 @@ export default function ProviderDetailScreen() {
           <View style={styles.header}>
             <View style={styles.providerInfo}>
               <View style={styles.providerAvatar}>
-                <Text style={styles.providerInitials}>
-                  {provider.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </Text>
+                {provider.selfieUrl ? (
+                  <Image 
+                    source={{ uri: provider.selfieUrl }} 
+                    style={styles.providerAvatarImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={styles.providerInitials}>
+                    {(provider.name || "Provider")
+                      .split(" ")
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join("")}
+                  </Text>
+                )}
               </View>
               <View>
                 <Text style={[styles.providerName, isMobile && styles.providerNameMobile]}>
-                  {provider.name}
+                  {provider.name || "Unnamed Provider"}
                 </Text>
                 <Text style={styles.providerId}>ID: {provider.id}</Text>
               </View>
@@ -322,7 +332,12 @@ export default function ProviderDetailScreen() {
             />
           )}
 
-          {activeTab === "verification" && <VerificationTab provider={provider} />}
+          {activeTab === "verification" && (
+            <VerificationTab 
+              provider={provider} 
+              onDocumentPress={(doc) => setViewingDocument({ name: doc.name, url: doc.url, provider: provider.name })}
+            />
+          )}
 
           {activeTab === "profile" && (
             <ProfileTab
@@ -358,6 +373,11 @@ export default function ProviderDetailScreen() {
         onCancel={() =>
           setReasonModal({ visible: false, actionType: null, title: "", message: "" })
         }
+      />
+
+      <DocumentViewerModal
+        document={viewingDocument}
+        onClose={() => setViewingDocument(null)}
       />
     </View>
   );
@@ -498,12 +518,13 @@ function OverviewTab({
   );
 }
 
-function VerificationTab({ provider }: { provider: Provider }) {
-  const handleDownload = (docName: string) => {
-    console.log(`[ProviderDetail] Downloading document: ${docName}`);
-    Alert.alert("Download", `Document "${docName}" download started`);
-  };
-
+function VerificationTab({ 
+  provider, 
+  onDocumentPress 
+}: { 
+  provider: Provider; 
+  onDocumentPress: (doc: { name: string; url: string }) => void;
+}) {
   return (
     <View style={styles.tabContent}>
       <View style={styles.section}>
@@ -514,13 +535,13 @@ function VerificationTab({ provider }: { provider: Provider }) {
               <TouchableOpacity
                 key={index}
                 style={styles.documentCard}
-                onPress={() => handleDownload(doc.name)}
+                onPress={() => onDocumentPress(doc)}
               >
                 <FileText size={32} color={Colors.light.primary} />
                 <Text style={styles.documentName}>{doc.name}</Text>
-                <TouchableOpacity style={styles.downloadIconButton}>
+                <View style={styles.downloadIconButton}>
                   <Download size={16} color={Colors.light.primary} />
-                </TouchableOpacity>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
@@ -802,6 +823,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.primary,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  providerAvatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 30,
   },
   providerInitials: {
     fontSize: 22,
@@ -1092,4 +1119,129 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: "top",
   },
+  documentModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  documentModalContent: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: 16,
+    width: "90%",
+    maxWidth: 700,
+    maxHeight: "90%",
+    overflow: "hidden",
+  },
+  documentModalContentMobile: {
+    width: "95%",
+    maxHeight: "95%",
+  },
+  documentModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  documentModalHeaderText: {
+    flex: 1,
+    gap: 4,
+  },
+  documentModalTitle: {
+    fontSize: 20,
+    fontWeight: "700" as const,
+    color: Colors.light.text,
+  },
+  documentModalSubtitle: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+  },
+  documentModalCloseButton: {
+    padding: 8,
+    marginLeft: 12,
+  },
+  documentModalBody: {
+    flex: 1,
+  },
+  documentModalBodyContent: {
+    padding: 20,
+  },
+  documentImage: {
+    width: "100%",
+    height: 420,
+    borderRadius: 12,
+    backgroundColor: Colors.light.background,
+  },
+  documentModalFooter: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+  },
 });
+
+function DocumentViewerModal({
+  document,
+  onClose,
+}: {
+  document: { name: string; url: string; provider: string } | null;
+  onClose: () => void;
+}) {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+
+  if (!document) return null;
+
+  const handleOpenExternal = () => {
+    Linking.openURL(document.url).catch(() =>
+      Alert.alert("Couldn't open", "Unable to open the document in a new tab."),
+    );
+  };
+
+  return (
+    <Modal
+      visible={!!document}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.documentModalOverlay}>
+        <View style={[styles.documentModalContent, isMobile && styles.documentModalContentMobile]}>
+          <View style={styles.documentModalHeader}>
+            <View style={styles.documentModalHeaderText}>
+              <Text style={styles.documentModalTitle}>{document.name}</Text>
+              <Text style={styles.documentModalSubtitle}>{document.provider}</Text>
+            </View>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.documentModalCloseButton}
+            >
+              <CloseIcon size={24} color={Colors.light.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.documentModalBody}
+            contentContainerStyle={styles.documentModalBodyContent}
+          >
+            <Image
+              source={{ uri: document.url }}
+              style={styles.documentImage}
+              resizeMode="contain"
+            />
+          </ScrollView>
+
+          <View style={styles.documentModalFooter}>
+            <Button
+              title="Open Full Size"
+              icon={<Download size={18} color="#FFFFFF" />}
+              onPress={handleOpenExternal}
+              style={{ width: "100%" }}
+            />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}

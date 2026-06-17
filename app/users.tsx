@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Alert, useWindowDimensions,  } from "react-native";
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Alert, useWindowDimensions, RefreshControl } from "react-native";
 import { PressableOpacity as TouchableOpacity } from "@/components/PressableOpacity";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Sidebar from "@/components/Sidebar";
@@ -69,8 +69,10 @@ export default function UsersManagementScreen() {
 
   const pageSize = 20;
 
-  const loadUsers = useCallback(async () => {
-    setIsLoading(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadUsers = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setIsLoading(true);
     try {
       console.log("[UsersManagement] Loading users with filters:", {
         search,
@@ -94,9 +96,15 @@ export default function UsersManagementScreen() {
       console.error("[UsersManagement] Failed to load users:", error);
       Alert.alert("Error", "Failed to load users. Please try again.");
     } finally {
-      setIsLoading(false);
+      if (!isRefresh) setIsLoading(false);
     }
   }, [search, roleFilter, statusFilter, page, pageSize]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadUsers(true);
+    setRefreshing(false);
+  }, [loadUsers]);
 
   useEffect(() => {
     loadUsers();
@@ -208,6 +216,13 @@ export default function UsersManagementScreen() {
             isMobile && { paddingTop: 60 + insets.top + 16 },
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.light.primary}
+            />
+          }
         >
           <View style={styles.header}>
             <View>
@@ -451,14 +466,15 @@ function UserRow({
       <View style={[styles.tableCell, { flex: 2 }]}>
         <View style={styles.userAvatar}>
           <Text style={styles.userInitials}>
-            {user.name
+            {(user.name || "User")
               .split(" ")
+              .filter(Boolean)
               .map((n) => n[0])
               .join("")}
           </Text>
         </View>
         <View>
-          <Text style={styles.userName}>{user.name}</Text>
+          <Text style={styles.userName}>{user.name || "Unnamed User"}</Text>
           <Text style={styles.userId}>ID: {user.id}</Text>
         </View>
       </View>
@@ -583,15 +599,16 @@ function UserCardMobile({
         <View style={styles.userCardHeader}>
           <View style={styles.userAvatar}>
             <Text style={styles.userInitials}>
-              {user.name
+              {(user.name || "User")
                 .split(" ")
+                .filter(Boolean)
                 .map((n) => n[0])
                 .join("")}
             </Text>
           </View>
           <View style={styles.userCardInfo}>
             <Text style={styles.userName} numberOfLines={1}>
-              {user.name}
+              {user.name || "Unnamed User"}
             </Text>
             <Text style={styles.userEmail} numberOfLines={1}>
               {user.email}
@@ -646,14 +663,15 @@ function UserDetailView({
 
       <View style={styles.detailAvatar}>
         <Text style={styles.detailAvatarText}>
-          {user.name
+          {(user.name || "User")
             .split(" ")
+            .filter(Boolean)
             .map((n) => n[0])
             .join("")}
         </Text>
       </View>
 
-      <Text style={styles.detailName}>{user.name}</Text>
+      <Text style={styles.detailName}>{user.name || "Unnamed User"}</Text>
       <Text style={styles.detailId}>ID: {user.id}</Text>
 
       <View style={styles.detailSection}>

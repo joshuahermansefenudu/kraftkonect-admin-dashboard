@@ -205,6 +205,7 @@ export interface BackendProvider {
   status: ProviderStatus;
   submittedAt: string;
   documents: ProviderDocument[];
+  selfieUrl?: string;
   bio?: string;
   rating?: number;
   // AI pre-screen fields (null = check not yet run)
@@ -270,6 +271,7 @@ export const adminProvidersQuery = async (params: {
       p.verificationDocs?.idUrl && { name: "Government ID", url: p.verificationDocs.idUrl },
       p.verificationDocs?.selfieUrl && { name: "Selfie", url: p.verificationDocs.selfieUrl },
     ].filter(Boolean) as ProviderDocument[],
+    selfieUrl: p.verificationDocs?.selfieUrl || undefined,
     bio: p.bio || "",
     rating: p.rating ? parseFloat(p.rating) : undefined,
     aiPhotoQuality: p.aiPhotoQuality ?? null,
